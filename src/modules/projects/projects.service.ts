@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../../common/prisma.module';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 
 @Injectable()
 export class ProjectsService {
-  private prisma = new PrismaClient();
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto) {
     const owner = await this.prisma.user.findUnique({ where: { id: createProjectDto.ownerId } });
@@ -20,15 +20,30 @@ export class ProjectsService {
     });
   }
 
-  async findAll(page = 1, limit = 20) {
+  async findAll(page = 1, limit = 20, search?: string, sort?: string) {
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { title: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+    let orderBy: any = { id: 'asc' };
+    if (sort) {
+      const [field, dir] = sort.split(':');
+      if (field && dir && ['asc', 'desc'].includes(dir)) {
+        orderBy = { [field]: dir };
+      }
+    }
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { id: 'asc' },
+        where,
+        orderBy,
         include: { owner: true },
       }),
-      this.prisma.project.count(),
+      this.prisma.project.count({ where }),
     ]);
     return { data, total };
   }

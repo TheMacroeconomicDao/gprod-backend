@@ -30,11 +30,25 @@ export class AuthService {
   }
 
   async login(username: string, password: string) {
-    const user = await this.validateUser(username, password);
+    const user = await this.validateUser(username, password) as any;
     if (!user) throw new UnauthorizedException('Invalid credentials');
-    const payload = { sub: user.id, username: user.username };
+    const payload = { sub: user.id, username: user.username, roles: user.roles };
     return {
       access_token: await this.jwtService.signAsync(payload),
+      refresh_token: await this.jwtService.signAsync(payload, { expiresIn: '7d' }),
     };
+  }
+
+  async refresh(refreshToken: string) {
+    try {
+      // TODO: Проверять refresh_token в базе и инвалидировать при логауте/смене пароля
+      const payload = await this.jwtService.verifyAsync(refreshToken);
+      // Можно добавить проверку в базе, если нужно
+      const { sub, username, roles } = payload;
+      const new_access_token = await this.jwtService.signAsync({ sub, username, roles }, { expiresIn: '15m' });
+      return { access_token: new_access_token };
+    } catch (e) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 }

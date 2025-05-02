@@ -4,26 +4,24 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { LocalAuthGuard } from './guards/local-auth.guard';
+import { EnvHelper } from '../../common/helpers/env.helper';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get('DEV_JWT_SECRET'),
-        signOptions: { expiresIn: config.get('DEV_JWT_EXPIRES') || '3600s' },
-      }),
+    JwtModule.register({
+      secret: EnvHelper.get('JWT_SECRET'),
+      signOptions: { expiresIn: EnvHelper.get('JWT_EXPIRES', '3600s') },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, LocalAuthGuard],
+  providers: [AuthService, JwtStrategy, LocalStrategy, LocalAuthGuard, { provide: APP_GUARD, useClass: RolesGuard }],
   exports: [JwtModule],
 })
 export class AuthModule {}

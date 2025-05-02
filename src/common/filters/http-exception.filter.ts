@@ -29,6 +29,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
       message,
       error,
+      code: (exception as any)['code'] || null,
     });
   }
 } 

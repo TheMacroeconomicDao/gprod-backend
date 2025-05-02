@@ -19,6 +19,8 @@ import {
   ApiInternalServerErrorResponse,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RateLimit } from '../../common/decorators/rate-limit.decorator';
 
 @ApiTags('projects')
 @ApiBearerAuth()
@@ -29,6 +31,7 @@ export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @ApiOperation({ summary: 'Создать проект (требуется JWT, лимит 10 req/min, роль: user/admin)' })
+  @RateLimit(10, 60)
   @ApiBody({ type: CreateProjectDto })
   @ApiResponse({ status: 201, description: 'Проект создан', schema: { example: { id: 1, title: 'My Project', description: 'Описание', ownerId: 1, createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' } } })
   @ApiBadRequestResponse({ description: 'Валидационная ошибка', type: ApiErrorResponseDto })
@@ -41,6 +44,7 @@ export class ProjectsController {
   }
 
   @ApiOperation({ summary: 'Получить список проектов (JWT, пагинация, поиск, сортировка, лимит 30 req/min, роль: user/admin)' })
+  @RateLimit(30, 60)
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   @ApiQuery({ name: 'search', required: false, example: 'my', description: 'Поиск по названию/описанию' })
@@ -81,13 +85,7 @@ export class ProjectsController {
     return this.projectsService.update(+id, updateProjectDto);
   }
 
-  @ApiOperation({ summary: 'Удалить проект (JWT, роль: admin)' })
-  @ApiParam({ name: 'id', type: Number, example: 1 })
-  @ApiResponse({ status: 200, description: 'Проект удалён', schema: { example: { success: true } } })
-  @ApiNotFoundResponse({ description: 'Проект не найден', type: ApiErrorResponseDto })
-  @ApiUnauthorizedResponse({ description: 'Нет JWT', type: ApiErrorResponseDto })
-  @ApiForbiddenResponse({ description: 'Нет прав', type: ApiErrorResponseDto })
-  @ApiInternalServerErrorResponse({ description: 'Внутренняя ошибка', type: ApiErrorResponseDto })
+  @Roles('admin')
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.projectsService.remove(+id);
