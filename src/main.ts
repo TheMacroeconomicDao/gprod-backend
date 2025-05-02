@@ -10,7 +10,6 @@ import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { logger: new WinstonLogger() });
-  app.setGlobalPrefix('api/v1');
   app.enableCors({
     origin: [
       'http://localhost:3000',
@@ -32,7 +31,7 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('docs', app, document);
+  SwaggerModule.setup('swagger', app, document);
 
   await app.listen(EnvHelper.int('PORT', 3000));
 }
