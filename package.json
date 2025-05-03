@@ -21,7 +21,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:e2e:local": "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod NODE_ENV=test jest --config ./test/jest-e2e.json",
+    "test:e2e:local": "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod NODE_ENV=test jest --config ./test/jest-e2e.json --runInBand",
     "test:e2e:ci": "BASE_URL=${BASE_URL:-http://app:3007} jest --config ./test/jest-e2e.json",
     "prisma:migrate:dev": "export DATABASE_URL=$(grep ^DEV_DATABASE_URL .env | cut -d '=' -f2-) && npx prisma migrate dev",
     "prisma:migrate:stage": "export DATABASE_URL=$(grep ^STAGE_DATABASE_URL .env | cut -d '=' -f2-) && npx prisma migrate deploy",
