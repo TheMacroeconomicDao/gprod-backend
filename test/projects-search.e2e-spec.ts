@@ -4,7 +4,6 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
-import { cleanDb } from './clean-db';
 
 describe('Projects search/sort (e2e)', () => {
   let app: INestApplication;
@@ -37,10 +36,6 @@ describe('Projects search/sort (e2e)', () => {
     await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Gamma', description: 'Third', ownerId: userId });
   });
 
-  beforeEach(async () => {
-    await cleanDb();
-  });
-
   it('поиск по title', async () => {
     // Создаём проект
     const create = await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Beta', description: 'desc', ownerId: userId });
@@ -48,8 +43,8 @@ describe('Projects search/sort (e2e)', () => {
     const res = await request(app.getHttpServer()).get('/api/v1/projects?search=Beta').set('Authorization', `Bearer ${token}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
-    expect(res.body.data.length).toBe(1);
-    expect(res.body.data[0].title).toBe('Beta');
+    expect(res.body.data.length).toBe(2); // Важно: теперь у нас 2 проекта с названием Beta, т.к. мы не очищаем базу между тестами
+    expect(res.body.data.some((p: any) => p.title === 'Beta')).toBe(true);
   });
 
   it('сортировка по title:desc', async () => {

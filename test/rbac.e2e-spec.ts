@@ -4,7 +4,6 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
-import { cleanDb } from './clean-db';
 
 // Хелпер для регистрации и логина
 async function registerAndLogin(app: INestApplication, user: any) {
@@ -44,10 +43,6 @@ describe('RBAC (e2e)', () => {
       throw new Error('usersArr is not array');
     }
     userId = usersArr.find((u: any) => u.username === 'userrbac').id;
-  });
-
-  beforeEach(async () => {
-    await cleanDb();
   });
 
   it('user не может удалить пользователя', async () => {

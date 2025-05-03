@@ -31,10 +31,9 @@ export async function setupE2EApp(app: INestApplication): Promise<void> {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(express.json({ limit: '1mb' }));
-  await app.init();
-}
-
-// Глобальный сброс базы перед всеми e2e
-beforeAll(async () => {
+  
+  // Очищаем базу перед инициализацией приложения
   await cleanDb();
-}); 
+  
+  await app.init();
+} 

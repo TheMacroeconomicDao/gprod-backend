@@ -4,7 +4,6 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
-import { cleanDb } from './clean-db';
 
 describe('Users search/sort (e2e)', () => {
   let app: INestApplication;
@@ -35,10 +34,6 @@ describe('Users search/sort (e2e)', () => {
       throw new Error('usersArr is not array');
     }
     userId = usersArr.find((u: any) => u.username === 'vasya1').id;
-  });
-
-  beforeEach(async () => {
-    await cleanDb();
   });
 
   it('поиск по username', async () => {

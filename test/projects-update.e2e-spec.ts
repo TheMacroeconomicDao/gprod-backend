@@ -4,7 +4,6 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
-import { cleanDb } from './clean-db';
 
 describe('Projects update (e2e)', () => {
   let app: INestApplication;
@@ -19,22 +18,30 @@ describe('Projects update (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await setupE2EApp(app);
 
-    await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'projupd', email: 'projupd@mail.com', password: '123456' });
-    const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'projupd', password: '123456' });
-    token = res.body.access_token;
+    // Регистрация и вход
+    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'projupd', email: 'projupd@mail.com', password: '123456' });
+    expect(reg.status).toBe(201);
+    const login = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'projupd', password: '123456' });
+    expect(login.status).toBe(200);
+    token = login.body.access_token;
+    
+    // Получение ID пользователя
     const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${token}`);
+    expect(users.status).toBe(200);
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
     userId = usersArr.find((u: any) => u.username === 'projupd').id;
-    const project = await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Upd', description: 'desc', ownerId: userId });
-    projectId = project.body.id;
-  });
-
-  beforeEach(async () => {
-    await cleanDb();
+    
+    // Создание проекта
+    const projectRes = await request(app.getHttpServer())
+      .post('/api/v1/projects')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'Upd', description: 'desc' });
+    expect(projectRes.status).toBe(201);
+    projectId = projectRes.body.id;
   });
 
   it('user может обновить свой проект', async () => {
