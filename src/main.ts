@@ -24,12 +24,11 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(express.json({ limit: '1mb' }));
 
+  app.setGlobalPrefix('api');
   app.enableVersioning({
     type: VersioningType.URI,
     defaultVersion: '1',
   });
-
-  app.setGlobalPrefix('api');
 
   // v1 Swagger
   const v1Config = new DocumentBuilder()
