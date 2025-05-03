@@ -31,6 +31,8 @@ services:
       dockerfile: Dockerfile
     depends_on:
       - db
+    env_file:
+      - .env
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod
       - NODE_ENV=test
@@ -39,7 +41,7 @@ services:
     volumes:
       - .:/app
       - /app/node_modules
-    command: pnpm test:e2e -- --runInBand
+    command: npx jest --config ./test/jest-e2e.json --runInBand
 volumes:
   pgdata: 
 
