@@ -50,7 +50,38 @@ describe('Forbidden/Unauthorized (e2e)', () => {
     expect(del.status).toBe(403);
   });
 
+  it('user может удалить свой проект', async () => {
+    // Создаём новый проект
+    const newProject = await request(app.getHttpServer())
+      .post('/api/v1/projects')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ title: 'To delete', description: 'Project for deletion', ownerId: userId });
+    
+    expect(newProject.status).toBe(201);
+    const newProjectId = newProject.body.id;
+    
+    // Удаляем свой проект
+    const del = await request(app.getHttpServer())
+      .delete(`/api/v1/projects/${newProjectId}`)
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(del.status).toBe(200);
+    expect(del.body.success).toBe(true);
+    
+    // Проверяем, что проект действительно удалён
+    const get = await request(app.getHttpServer())
+      .get(`/api/v1/projects/${newProjectId}`)
+      .set('Authorization', `Bearer ${token}`);
+    
+    expect(get.status).toBe(404);
+  });
+
   afterAll(async () => {
+    // Очищаем базу данных после тестов
+    await request(app.getHttpServer())
+      .delete(`/api/v1/projects/${projectId}`)
+      .set('Authorization', `Bearer ${token}`);
+    
     await app.close();
   });
 }); 

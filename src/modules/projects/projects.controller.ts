@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, ForbiddenException, Req } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
@@ -85,9 +85,23 @@ export class ProjectsController {
     return this.projectsService.update(+id, updateProjectDto);
   }
 
-  @Roles('admin')
+  @ApiOperation({ summary: 'Удалить проект (JWT, роль: admin или владелец проекта)' })
+  @ApiParam({ name: 'id', type: Number, example: 1 })
+  @ApiResponse({ status: 200, description: 'Проект удалён', schema: { example: { success: true } } })
+  @ApiNotFoundResponse({ description: 'Проект не найден', type: ApiErrorResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Нет JWT', type: ApiErrorResponseDto })
+  @ApiForbiddenResponse({ description: 'Нет прав', type: ApiErrorResponseDto })
+  @ApiInternalServerErrorResponse({ description: 'Внутренняя ошибка', type: ApiErrorResponseDto })
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string, @Req() req: any) {
+    // Получаем проект
+    const project = await this.projectsService.findOne(+id);
+    
+    // Проверяем права: admin может удалять любой проект, user только свой
+    if (!req.user.roles.includes('admin') && project.ownerId !== req.user.userId) {
+      throw new ForbiddenException('You can only delete your own projects');
+    }
+    
     return this.projectsService.remove(+id);
   }
 }

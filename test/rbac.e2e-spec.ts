@@ -5,17 +5,34 @@ import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
 
+// Уникальные пользователи для RBAC тестов
+const RBAC_ADMIN = {
+  username: 'admin_rbac_test',
+  email: 'admin_rbac_test@test.com',
+  password: 'admin123',
+  roles: ['admin']
+};
+
+const RBAC_USER = {
+  username: 'user_rbac_test',
+  email: 'user_rbac_test@test.com',
+  password: 'user123',
+  roles: ['user']
+};
+
 // Хелпер для регистрации и логина
-async function registerAndLogin(app: INestApplication, user: any) {
+async function registerAndLogin(app: INestApplication, user: any): Promise<string> {
   const reg = await request(app.getHttpServer())
     .post('/api/v1/auth/register')
     .send(user);
   expect(reg.status).toBe(201);
+  
   const res = await request(app.getHttpServer())
     .post('/api/v1/auth/login')
     .send({ username: user.username, password: user.password });
   expect(res.status).toBe(200);
   expect(res.body.access_token).toBeDefined();
+  
   return res.body.access_token;
 }
 
@@ -30,33 +47,59 @@ describe('RBAC (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await setupE2EApp(app);
+    
+    // Очищаем базу данных
+    await setupE2EApp(app, false);
+    
     // Создаём admin и user с уникальными username/email
-    adminToken = await registerAndLogin(app, { username: 'adminrbac', email: 'adminrbac@mail.com', password: 'admin123', roles: ['admin'] });
-    userToken = await registerAndLogin(app, { username: 'userrbac', email: 'userrbac@mail.com', password: 'user123', roles: ['user'] });
-    // Получаем id user
-    const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${adminToken}`);
+    adminToken = await registerAndLogin(app, RBAC_ADMIN);
+    userToken = await registerAndLogin(app, RBAC_USER);
+    
+    // Получаем id пользователя для тестов
+    const users = await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(users.status).toBe(200);
+    
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
-    userId = usersArr.find((u: any) => u.username === 'userrbac').id;
+    
+    const foundUser = usersArr.find((u: any) => u.username === RBAC_USER.username);
+    if (!foundUser) {
+      throw new Error(`Пользователь ${RBAC_USER.username} не найден в списке пользователей`);
+    }
+    
+    userId = foundUser.id;
+    console.log(`Тестируем RBAC для пользователя с ID: ${userId}`);
   });
 
   it('user не может удалить пользователя', async () => {
-    await request(app.getHttpServer())
+    // Проверяем, что обычный пользователь не может удалить другого пользователя
+    const res = await request(app.getHttpServer())
       .delete(`/api/v1/users/${userId}`)
-      .set('Authorization', `Bearer ${userToken}`)
-      .expect(403);
+      .set('Authorization', `Bearer ${userToken}`);
+      
+    expect(res.status).toBe(403);
   });
 
   it('admin может удалить пользователя', async () => {
-    await request(app.getHttpServer())
+    // Проверяем, что администратор может удалить пользователя
+    const res = await request(app.getHttpServer())
       .delete(`/api/v1/users/${userId}`)
-      .set('Authorization', `Bearer ${adminToken}`)
-      .expect(200);
+      .set('Authorization', `Bearer ${adminToken}`);
+      
+    expect(res.status).toBe(200);
+    
+    // Проверяем, что пользователь действительно помечен как неактивный
+    const getUser = await request(app.getHttpServer())
+      .get(`/api/v1/users/${userId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+      
+    expect(getUser.status).toBe(200);
+    expect(getUser.body.isActive).toBe(false);
   });
 
   afterAll(async () => {

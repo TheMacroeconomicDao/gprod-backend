@@ -5,6 +5,12 @@ import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
 
+// Уникальные идентификаторы для теста проектов
+const PROJECT_USER = 'user_projects_update';
+const PROJECT_EMAIL = 'user_projects_update@test.com';
+const PROJECT_PASSWORD = '123456';
+const PROJECT_TITLE = 'Project Update Test';
+
 describe('Projects update (e2e)', () => {
   let app: INestApplication;
   let token: string;
@@ -16,41 +22,78 @@ describe('Projects update (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await setupE2EApp(app);
+    
+    // Полная очистка базы данных перед тестами
+    await setupE2EApp(app, false);
 
-    // Регистрация и вход
-    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'projupd', email: 'projupd@mail.com', password: '123456' });
+    // Регистрация и вход с уникальными данными
+    const reg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({ username: PROJECT_USER, email: PROJECT_EMAIL, password: PROJECT_PASSWORD });
     expect(reg.status).toBe(201);
-    const login = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'projupd', password: '123456' });
+    
+    const login = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ username: PROJECT_USER, password: PROJECT_PASSWORD });
     expect(login.status).toBe(200);
+    expect(login.body.access_token).toBeDefined();
     token = login.body.access_token;
     
     // Получение ID пользователя
-    const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${token}`);
+    const users = await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`);
     expect(users.status).toBe(200);
+    
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
-    userId = usersArr.find((u: any) => u.username === 'projupd').id;
     
-    // Создание проекта
+    const user = usersArr.find((u: any) => u.username === PROJECT_USER);
+    if (!user) {
+      throw new Error(`Пользователь ${PROJECT_USER} не найден в списке пользователей`);
+    }
+    userId = user.id;
+    
+    // Создание проекта для теста обновления
+    const projectData = { 
+      title: PROJECT_TITLE, 
+      description: 'Project for update testing' 
+    };
+    
     const projectRes = await request(app.getHttpServer())
       .post('/api/v1/projects')
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Upd', description: 'desc' });
+      .send(projectData);
+      
     expect(projectRes.status).toBe(201);
+    expect(projectRes.body.title).toBe(PROJECT_TITLE);
+    expect(projectRes.body.id).toBeDefined();
+    
     projectId = projectRes.body.id;
+    console.log(`Создан проект ID: ${projectId} для теста обновления`);
   });
 
   it('user может обновить свой проект', async () => {
+    // Обновляем проект
+    const updatedTitle = 'Updated Project Title';
     const res = await request(app.getHttpServer())
       .patch(`/api/v1/projects/${projectId}`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ title: 'Updated' });
+      .send({ title: updatedTitle });
+      
     expect(res.status).toBe(200);
-    expect(res.body.title).toBe('Updated');
+    expect(res.body.title).toBe(updatedTitle);
+    
+    // Проверяем, что проект действительно обновился в базе
+    const getProject = await request(app.getHttpServer())
+      .get(`/api/v1/projects/${projectId}`)
+      .set('Authorization', `Bearer ${token}`);
+      
+    expect(getProject.status).toBe(200);
+    expect(getProject.body.title).toBe(updatedTitle);
   });
 
   it('без JWT нельзя обновить проект', async () => {
