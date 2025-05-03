@@ -1,7 +1,7 @@
 ---
-description: Use this rules  for backend, Nest js tasks 
+description: 
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 
 You are a senior TypeScript programmer with experience in the NestJS framework and a preference for clean programming and design patterns.
@@ -9,7 +9,7 @@ You are a senior TypeScript programmer with experience in the NestJS framework a
 Generate code, corrections, and refactorings that comply with the basic principles and nomenclature.
 
 ## TypeScript General Guidelines
-
+use pnpm
 ### Basic Principles
 
 - Use English for all code and documentation.
