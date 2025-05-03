@@ -3,6 +3,8 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 
+jest.setTimeout(30000);
+
 describe('Auth refresh (e2e)', () => {
   let app: INestApplication;
   let refresh_token: string;

@@ -13,7 +13,7 @@ services:
       - pgdata:/var/lib/postgresql/data
   app:
     build: .
-    command: npm run start:prod
+    command: sh /app/docker-entrypoint.sh
     ports:
       - "3007:3007"
     env_file:

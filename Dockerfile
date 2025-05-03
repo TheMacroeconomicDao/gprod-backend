@@ -7,4 +7,8 @@ COPY prisma ./prisma
 COPY . .
 RUN npx prisma generate
 RUN pnpm run build
-CMD ["node", "dist/src/main.js"]
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+# Генерируем build-info.json
+RUN node -e "const { execSync } = require('child_process'); const fs = require('fs'); const pkg = require('./package.json'); fs.writeFileSync('./build-info.json', JSON.stringify({ name: pkg.name, version: pkg.version, buildTime: new Date().toISOString(), gitHash: execSync('git rev-parse --short HEAD').toString().trim() }, null, 2));"
+CMD ["sh", "/app/docker-entrypoint.sh"]

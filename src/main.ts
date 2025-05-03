@@ -29,7 +29,7 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('api');
 
   // v1 Swagger
   const v1Config = new DocumentBuilder()
