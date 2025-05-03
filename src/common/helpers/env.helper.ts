@@ -15,7 +15,7 @@ export class EnvHelper {
   static readonly ENV_PROD = 'production';
   static readonly ENV_TEST = 'test';
 
-  // Префиксы для переменных окружения
+  // Префиксы для переменных окружения (для обратной совместимости)
   private static readonly PREFIX_DEV = 'DEV';
   private static readonly PREFIX_STAGE = 'STAGE';
   private static readonly PREFIX_PROD = 'PRODUCTION';
@@ -71,24 +71,25 @@ export class EnvHelper {
 
   /**
    * Определяет правильную переменную окружения для текущего контура
+   * Обновлено для работы с новой структурой .env файлов:
+   * - Сначала проверяет простую переменную без префикса (новый подход)
+   * - Затем проверяет префиксированную переменную (обратная совместимость)
    */
   private static resolveKey(key: string): string | undefined {
-    const prefix = this.getPrefix();
-    
     // Приоритет:
-    // 1. Префиксированная переменная для текущего контура (DEV_*, STAGE_*, PRODUCTION_*)
-    // 2. Общая переменная без префикса
-    // 3. Переменная для другого контура, если нет специфичной
+    // 1. Простая переменная без префикса (работа с отдельными .env файлами)
+    // 2. Префиксированная переменная для текущего контура (обратная совместимость)
     
-    // Ищем специфичную для текущего контура
-    const prefixedValue = process.env[`${prefix}_${key}`];
-    if (prefixedValue !== undefined) return prefixedValue;
-    
-    // Ищем общую переменную без префикса
+    // Ищем простую переменную (новый подход с отдельными .env файлами)
     const commonValue = process.env[key];
     if (commonValue !== undefined) return commonValue;
     
-    // Ищем в других контурах (fallback)
+    // Обратная совместимость с префиксами
+    const prefix = this.getPrefix();
+    const prefixedValue = process.env[`${prefix}_${key}`];
+    if (prefixedValue !== undefined) return prefixedValue;
+    
+    // Ищем в других контурах (fallback для обратной совместимости)
     if (prefix !== this.PREFIX_DEV) {
       const devValue = process.env[`${this.PREFIX_DEV}_${key}`];
       if (devValue !== undefined) return devValue;
@@ -133,8 +134,7 @@ export class EnvHelper {
     }
     
     if (required) {
-      const envPrefix = this.getPrefix();
-      const errorMsg = `Env variable ${envPrefix}_${key} not set. Проверьте .env и docker-compose.yml!`;
+      const errorMsg = `Env variable ${key} not set. Проверьте .env файл для контура ${this.environment}!`;
       console.error(`EnvHelper: ${errorMsg}`);
       throw new Error(errorMsg);
     }
