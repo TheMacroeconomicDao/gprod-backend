@@ -54,7 +54,16 @@ describe('ProjectsController', () => {
   });
 
   it('remove calls service.remove', async () => {
+    const mockReq = {
+      user: {
+        roles: ['admin'],
+        sub: 1,
+      },
+    };
+    
+    (service.findOne as jest.Mock).mockResolvedValue({ id: 1, ownerId: 1 });
     (service.remove as jest.Mock).mockResolvedValue(undefined);
-    await expect(controller.remove('1')).resolves.toBeUndefined();
+    
+    await expect(controller.remove('1', mockReq)).resolves.toBeUndefined();
   });
 }); 

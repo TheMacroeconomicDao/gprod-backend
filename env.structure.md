@@ -1,122 +1,264 @@
 # Структура переменных окружения для GPROD API
 
-## Общие настройки
+## Обзор системы окружений
+
+GPROD API поддерживает три контура окружения:
+1. **Development** (`.env.development`) - для локальной разработки
+2. **Staging** (`.env.staging`) - для тестирования перед релизом
+3. **Production** (`.env.production`) - для продакшен-окружения
+
+Переключение между контурами осуществляется через скрипты:
+```sh
+# Установка шаблонов для всех контуров
+pnpm run env:setup
+
+# Переключение на конкретный контур
+pnpm run env:dev:new     # активирует development
+pnpm run env:stage:new   # активирует staging
+pnpm run env:prod:new    # активирует production
+
+# Интерактивное переключение
+pnpm run env:switch:new  # выбор через консоль
+```
+
+## Новая структура файлов окружения
+
+Каждый контур имеет собственный файл с переменными окружения:
+
+- `.env.development` - для development контура
+- `.env.staging` - для staging контура 
+- `.env.production` - для production контура
+
+При переключении контура соответствующий файл копируется в `.env`.
+
+EnvHelper автоматически определяет контур на основе `NODE_ENV` и выбирает нужные переменные.
+
+## Структура переменных для DEVELOPMENT
 
 ```
-# Текущий контур
-NODE_ENV=development # Может быть development, staging или production
+# Основные настройки окружения
+NODE_ENV=development
+PORT=3000
 
-# Информация о приложении
+# База данных
+DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_dev
+
+# Авторизация и JWT
+JWT_SECRET=dev_jwt_secret_change_me_in_production
+JWT_EXPIRES=3600s
+JWT_REFRESH_EXPIRES=7d
+
+# Логирование
+LOG_LEVEL=debug
+LOG_FILE_PATH=./logs/app.log
+
+# CORS и безопасность
+CORS_ENABLED=true
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
+RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
+
+# Дополнительные настройки
+APP_NAME=GPROD API (Dev)
+APP_VERSION=1.0.0
+HOST=localhost
+DOMAIN=localhost
+
+# Postgres
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=gprod_dev
+
+# Настройки хеширования паролей (Argon2)
+ARGON2_MEMORY_COST=4096      # Использование памяти (в КБ)
+ARGON2_TIME_COST=3           # Количество итераций
+ARGON2_PARALLELISM=1         # Степень параллелизма
+```
+
+## Структура переменных для STAGING
+
+```
+# Основные настройки окружения
+NODE_ENV=staging
+PORT=3003
+
+# База данных
+DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_stage
+
+# Авторизация и JWT
+JWT_SECRET=stage_jwt_secret_change_me_in_production
+JWT_EXPIRES=3600s
+JWT_REFRESH_EXPIRES=7d
+
+# Логирование
+LOG_LEVEL=info
+LOG_FILE_PATH=./logs/app.log
+
+# CORS и безопасность
+CORS_ENABLED=true
+CORS_ORIGIN=https://stage.gprod.com,https://stage-admin.gprod.com
+RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
+RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
+
+# Дополнительные настройки
+APP_NAME=GPROD API (Staging)
+APP_VERSION=1.0.0
+HOST=localhost
+DOMAIN=stage.gprod.com
+
+# Postgres
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=gprod_stage
+
+# Настройки хеширования паролей (Argon2)
+ARGON2_MEMORY_COST=4096
+ARGON2_TIME_COST=3
+ARGON2_PARALLELISM=1
+
+# Prometheus и Grafana
+PROMETHEUS_PORT=9090
+GRAFANA_PORT=3100
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=admin
+```
+
+## Структура переменных для PRODUCTION
+
+```
+# Основные настройки окружения
+NODE_ENV=production
+PORT=3007
+
+# База данных
+DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/gprod_prod
+
+# Авторизация и JWT
+JWT_SECRET=super_secure_jwt_secret_for_production
+JWT_EXPIRES=1h
+JWT_REFRESH_EXPIRES=30d
+
+# Логирование
+LOG_LEVEL=info
+LOG_FILE_PATH=/var/log/gprod/app.log
+
+# CORS и безопасность
+CORS_ENABLED=true
+CORS_ORIGIN=https://gprod.com,https://admin.gprod.com
+RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
+RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
+
+# Дополнительные настройки
 APP_NAME=GPROD API
 APP_VERSION=1.0.0
+HOST=localhost
+DOMAIN=gprod.com
+
+# Postgres
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=super_secure_postgres_password
+POSTGRES_DB=gprod_prod
+
+# Настройки хеширования паролей (Argon2) - повышены для production
+ARGON2_MEMORY_COST=8192
+ARGON2_TIME_COST=4
+ARGON2_PARALLELISM=2
+
+# Redis для кэширования
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_PASSWORD=super_secure_redis_password
+
+# Nginx
+NGINX_PORT=80
+NGINX_SSL_PORT=443
+SSL_CERTIFICATE_PATH=/etc/ssl/certs/gprod.crt
+SSL_KEY_PATH=/etc/ssl/private/gprod.key
+
+# Prometheus и Grafana
+GRAFANA_PORT=3500
+GRAFANA_ADMIN_USER=admin
+GRAFANA_ADMIN_PASSWORD=super_secure_grafana_password
 ```
 
 ## Контур для тестирования (E2E-тесты)
 
 ```
-TEST_JWT_SECRET=test_secret_key_for_jwt_e2e_tests
+# Тестовое окружение
+NODE_ENV=test
+TEST_DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_test
+
+# Тестовые JWT настройки
+JWT_SECRET=test_secret_key_for_jwt_e2e_tests
+JWT_EXPIRES=3600s
+JWT_REFRESH_EXPIRES=7d
+
+# Хост API для E2E тестов
+BASE_URL=http://localhost:3000
 ```
 
-## DEVELOPMENT Контур
+## Доступ к переменным через EnvHelper
 
-```
-# Настройки сервера
-DEV_PORT=3000
-DEV_HOST=localhost
+Класс `EnvHelper` в проекте предоставляет удобные типизированные методы для работы с переменными окружения:
 
-# База данных
-DEV_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod_dev
+```typescript
+// Строковые значения (с резервным значением)
+const jwtSecret = EnvHelper.get('JWT_SECRET', 'default-secret');
 
-# Авторизация и JWT
-DEV_JWT_SECRET=dev_jwt_secret_key_change_in_production
-DEV_JWT_EXPIRES=3600s
-DEV_JWT_REFRESH_EXPIRES=7d
+// Числовые значения 
+const port = EnvHelper.int('PORT', 3000);
 
-# Логирование
-DEV_LOG_LEVEL=debug
+// Логические значения
+const isCorsEnabled = EnvHelper.bool('CORS_ENABLED', true);
 
-# CORS и безопасность
-DEV_CORS_ENABLED=true
-DEV_CORS_ORIGIN=http://localhost:3000,http://localhost:5173
+// Массивы строк (например, для CORS_ORIGIN)
+const corsOrigins = EnvHelper.array('CORS_ORIGIN', ['http://localhost:3000']);
 ```
 
-## STAGING Контур
+## Обратная совместимость
 
-```
-# Настройки сервера
-STAGE_PORT=3003
-STAGE_HOST=localhost
-STAGE_DOMAIN=stage.gprod.com
+EnvHelper также поддерживает обратную совместимость с префиксированными переменными:
 
-# База данных
-STAGE_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod_stage
+1. Сначала проверяет обычную переменную (например, `PORT`)
+2. Затем проверяет префиксированную переменную для текущего контура (например, `DEV_PORT` в development)
+3. При необходимости ищет в переменных других контуров для fallback
 
-# Авторизация и JWT
-STAGE_JWT_SECRET=staging_jwt_secret_key_change_in_production
-STAGE_JWT_EXPIRES=3600s
-STAGE_JWT_REFRESH_EXPIRES=7d
+## Рекомендации по безопасности
 
-# Логирование
-STAGE_LOG_LEVEL=info
+1. **Никогда не коммитьте** реальные .env файлы в репозиторий
+2. Используйте надежные случайные значения для секретов:
+   ```bash
+   # Генерация надежного JWT_SECRET
+   openssl rand -base64 32
+   ```
+3. В production используйте:
+   - Системы управления секретами (HashiCorp Vault, AWS Secrets Manager)
+   - Переменные окружения контейнеров вместо .env файлов
+   - Разные пароли для разных сервисов
+4. Регулярно обновляйте секреты
+5. Для JWT_SECRET - минимум 32 случайных символа
+6. Используйте разные JWT_SECRET для разных окружений
 
-# CORS и безопасность
-STAGE_CORS_ENABLED=true
-STAGE_CORS_ORIGIN=https://stage.gprod.com
-```
+## Примечания по Docker
 
-## PRODUCTION Контур
+При запуске в Docker все переменные должны быть определены в `docker-compose.yml` файле или `.env` файле, который Docker Compose автоматически подхватывает. 
 
-```
-# Настройки сервера
-PRODUCTION_PORT=3007
-PRODUCTION_HOST=localhost
-PRODUCTION_DOMAIN=gprod.com
+Для передачи переменных в контейнер можно использовать `environment` или `env_file`:
 
-# База данных
-PRODUCTION_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod_prod
-
-# Авторизация и JWT
-PRODUCTION_JWT_SECRET=production_jwt_secret_key_must_be_changed
-PRODUCTION_JWT_EXPIRES=3600s
-PRODUCTION_JWT_REFRESH_EXPIRES=7d
-
-# Логирование
-PRODUCTION_LOG_LEVEL=info
-
-# CORS и безопасность
-PRODUCTION_CORS_ENABLED=true
-PRODUCTION_CORS_ORIGIN=https://gprod.com
-```
-
-## Общие настройки базы данных
-
-```
-# База данных (общие настройки)
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=gprod
-```
-
-## Безопасность и ограничения
-
-```
-# Rate limiting
-RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
-RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
-
-# Хеширование паролей
-BCRYPT_ROUNDS=10  # Раунды хеширования для паролей
-
-# Логирование
-LOG_FILE_PATH=./logs/app.log
-```
-
-## Примечания
-
-1. Значения в этом файле - только примеры. В реальной среде используйте надежные случайные значения для секретов.
-2. Для production среды рекомендуется использовать внешние системы управления секретами.
-3. Не коммитьте реальные .env файлы в репозиторий! Используйте .env.template и .gitignore.
-4. Для JWT_SECRET используйте надежные случайные значения (минимум 32 символа).
-5. Для development можно использовать значения по умолчанию для простоты настройки. 
+```yaml
+services:
+  app:
+    build: .
+    environment:
+      - NODE_ENV=production
+      - PORT=3007
+    # или
+    env_file:
+      - .env.production
+``` 
