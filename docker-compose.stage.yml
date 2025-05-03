@@ -28,7 +28,7 @@ services:
         - NODE_ENV=staging
     command: sh /app/docker-entrypoint.sh
     ports:
-      - "3003:3000" # Порт для staging
+      - "3003:3003" # Обновлено: порт внутри контейнера 3003
     env_file:
       - .env
     environment:
