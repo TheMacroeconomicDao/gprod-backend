@@ -9,9 +9,20 @@ import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './common/prisma.module';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
 import { RolesGuard } from './common/guards/roles.guard';
+import { ConfigModule } from './common/config/config.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, ProjectsModule, AuthModule, HealthModule],
+  imports: [
+    // Инфраструктурные модули
+    ConfigModule,
+    PrismaModule, 
+    
+    // Функциональные модули
+    UsersModule, 
+    ProjectsModule, 
+    AuthModule, 
+    HealthModule
+  ],
   controllers: [AppController],
   providers: [
     AppService, 

@@ -235,3 +235,123 @@ pnpm test:e2e:docker
 ```bash
 pnpm test
 ```
+
+## Контуры окружения
+
+Проект поддерживает три контура окружения:
+
+1. **Development (dev)** - для разработки
+2. **Staging (stage)** - для тестирования перед релизом 
+3. **Production (prod)** - для продакшена
+
+Каждый контур имеет свои настройки, переменные окружения и docker-compose конфигурацию.
+
+## Запуск проекта
+
+### Локальный запуск
+
+```bash
+# Установка зависимостей
+pnpm install
+
+# Запуск в режиме разработки
+pnpm run start:dev
+
+# Запуск в режиме staging
+pnpm run start:stage
+
+# Запуск в режиме production
+pnpm run start:prod
+```
+
+### Запуск в Docker
+
+```bash
+# Development
+pnpm run docker:dev
+# или с пересборкой
+pnpm run docker:dev:build
+
+# Staging
+pnpm run docker:stage
+# или с пересборкой
+pnpm run docker:stage:build
+
+# Production
+pnpm run docker:prod
+# или с пересборкой
+pnpm run docker:prod:build
+
+# Остановка контейнеров
+pnpm run docker:dev:stop
+pnpm run docker:stage:stop
+pnpm run docker:prod:stop
+```
+
+## Настройка окружения
+
+Для каждого контура необходимо настроить соответствующие переменные окружения:
+
+1. Создайте файл `.env` для разработки (или используйте существующий)
+2. Создайте файл `.env.prod` из шаблона `env.prod.example` для продакшена
+
+Структура переменных окружения описана в файле `env.structure.md`.
+
+## Работа с базой данных
+
+```bash
+# Миграции для dev
+pnpm run prisma:migrate:dev
+
+# Миграции для stage (только apply)
+pnpm run prisma:migrate:stage
+
+# Миграции для prod (только apply)
+pnpm run prisma:migrate:prod
+
+# Prisma Studio для просмотра и редактирования данных
+pnpm run prisma:studio:dev
+```
+
+## Запуск в Docker для разных окружений
+
+```bash
+# Запуск миграций в Docker для dev
+pnpm run docker:prisma:migrate:dev
+
+# Запуск миграций в Docker для stage
+pnpm run docker:prisma:migrate:stage
+
+# Запуск миграций в Docker для prod
+pnpm run docker:prisma:migrate:prod
+```
+
+## E2E тесты
+
+```bash
+# Запуск тестов локально
+pnpm run test:e2e:local
+
+# Запуск тестов в Docker
+pnpm run test:e2e:docker
+```
+
+## Docker-compose конфигурации
+
+- `docker-compose.dev.yml` - для разработки, включает PostgreSQL, adminer и e2e тесты
+- `docker-compose.stage.yml` - для стейджинга, добавляет Prometheus и Grafana для мониторинга
+- `docker-compose.prod.yml` - для продакшена, включает Nginx, Redis, настроенное масштабирование и оптимизации
+
+## Структура проекта
+
+- `src/` - исходный код приложения
+  - `common/` - общие компоненты (гварды, хелперы, декораторы)
+    - `config/` - конфигурация для трех контуров
+    - `helpers/` - вспомогательные функции
+    - `guards/` - гварды для авторизации
+  - `modules/` - модули приложения
+- `prisma/` - схема Prisma и миграции
+- `test/` - e2e тесты
+- `docker-compose.*.yml` - конфигурации для разных окружений
+- `Dockerfile` - для разработки
+- `Dockerfile.prod` - оптимизированный для продакшена
