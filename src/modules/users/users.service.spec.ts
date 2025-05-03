@@ -59,4 +59,8 @@ describe('UsersService', () => {
     prisma.user.findUnique = jest.fn().mockResolvedValue({ id: 2 });
     await expect(service.findByEmail('b')).resolves.toEqual({ id: 2 });
   });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
+  });
 }); 
