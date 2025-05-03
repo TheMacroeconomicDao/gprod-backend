@@ -97,18 +97,25 @@ export class ProjectsController {
     // Получаем проект
     const project = await this.projectsService.findOne(+id);
     
-    // Добавляем логирование для отладки
-    console.log('[ProjectsController.remove] project:', project);
-    console.log('[ProjectsController.remove] user:', req.user);
+    // Добавляем подробное логирование для отладки
+    console.log('[ProjectsController.remove] project:', JSON.stringify(project));
+    console.log('[ProjectsController.remove] user:', JSON.stringify(req.user));
     
     // Получаем ID пользователя из токена (может быть в sub или userId)
     const userIdFromToken = req.user.sub || req.user.userId;
+    console.log('[ProjectsController.remove] userIdFromToken:', userIdFromToken);
+    console.log('[ProjectsController.remove] project.ownerId:', project.ownerId);
+    console.log('[ProjectsController.remove] типы: userIdFromToken:', typeof userIdFromToken, 'project.ownerId:', typeof project.ownerId);
+    console.log('[ProjectsController.remove] сравнение:', project.ownerId === userIdFromToken);
+    console.log('[ProjectsController.remove] числовое сравнение:', Number(project.ownerId) === Number(userIdFromToken));
     
     // Проверяем права: admin может удалять любой проект, user только свой
-    if (!req.user.roles.includes('admin') && project.ownerId !== userIdFromToken) {
+    if (!req.user.roles?.includes('admin') && Number(project.ownerId) !== Number(userIdFromToken)) {
+      console.log('[ProjectsController.remove] ДОСТУП ЗАПРЕЩЕН');
       throw new ForbiddenException('You can only delete your own projects');
     }
     
+    console.log('[ProjectsController.remove] ДОСТУП РАЗРЕШЕН');
     return this.projectsService.remove(+id);
   }
 }
