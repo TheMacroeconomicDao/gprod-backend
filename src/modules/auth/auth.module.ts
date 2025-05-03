@@ -8,8 +8,6 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { LocalStrategy } from './strategies/local.strategy';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { EnvHelper } from '../../common/helpers/env.helper';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -21,7 +19,7 @@ import { APP_GUARD } from '@nestjs/core';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, LocalStrategy, LocalAuthGuard, { provide: APP_GUARD, useClass: RolesGuard }],
+  providers: [AuthService, JwtStrategy, LocalStrategy, LocalAuthGuard],
   exports: [JwtModule],
 })
 export class AuthModule {}

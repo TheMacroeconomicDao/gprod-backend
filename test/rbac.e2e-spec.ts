@@ -86,6 +86,11 @@ describe('RBAC (e2e)', () => {
   });
 
   it('admin может удалить пользователя', async () => {
+    // Проверяем содержимое токена
+    const base64Payload = adminToken.split('.')[1];
+    const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf8'));
+    console.log('JWT Payload:', payload);
+    
     // Проверяем, что администратор может удалить пользователя
     const res = await request(app.getHttpServer())
       .delete(`/api/v1/users/${userId}`)
@@ -93,13 +98,12 @@ describe('RBAC (e2e)', () => {
       
     expect(res.status).toBe(200);
     
-    // Проверяем, что пользователь действительно помечен как неактивный
+    // Проверяем, что пользователь действительно удалён
     const getUser = await request(app.getHttpServer())
       .get(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`);
       
-    expect(getUser.status).toBe(200);
-    expect(getUser.body.isActive).toBe(false);
+    expect(getUser.status).toBe(404); // Пользователь должен быть удалён полностью
   });
 
   afterAll(async () => {

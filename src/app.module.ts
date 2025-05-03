@@ -8,10 +8,15 @@ import { AuthModule } from './modules/auth/auth.module';
 import { HealthModule } from './modules/health/health.module';
 import { PrismaModule } from './common/prisma.module';
 import { RateLimitGuard } from './common/guards/rate-limit.guard';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [PrismaModule, UsersModule, ProjectsModule, AuthModule, HealthModule],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: RateLimitGuard }],
+  providers: [
+    AppService, 
+    { provide: APP_GUARD, useClass: RateLimitGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+  ],
 })
 export class AppModule {}
