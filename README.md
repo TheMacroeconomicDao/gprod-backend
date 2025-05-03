@@ -185,3 +185,53 @@ MIT (см. LICENSE)
 ---
 
 **GPROD by Gybernaty** — чистый, production-ready backend. Вопросы/PR — welcome.
+
+## Запуск приложения
+
+### Локально
+
+1. Установите зависимости:
+```bash
+pnpm install
+```
+
+2. Скопируйте `.env.example` в `.env` и настройте переменные окружения.
+
+3. Запустите приложение:
+```bash
+pnpm dev
+```
+
+### В Docker
+
+```bash
+docker compose up -d
+```
+
+## Тестирование
+
+### E2E тесты локально
+
+Для локального запуска e2e тестов необходим запущенный PostgreSQL на localhost:5432.
+
+```bash
+pnpm test:e2e:local
+```
+
+Для запуска отдельного теста:
+
+```bash
+pnpm test:e2e:local -- -i test/имя-файла-теста.e2e-spec.ts
+```
+
+### E2E тесты в Docker
+
+```bash
+pnpm test:e2e:docker
+```
+
+### Модульные тесты
+
+```bash
+pnpm test
+```
