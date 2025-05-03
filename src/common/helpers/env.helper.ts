@@ -60,6 +60,23 @@ export class EnvHelper {
   }
 
   /**
+   * Проверяет, запущено ли приложение в Docker контейнере
+   */
+  static get isDocker(): boolean {
+    // Проверка на наличие файла /.dockerenv
+    try {
+      if (require('fs').existsSync('/.dockerenv')) {
+        return true;
+      }
+    } catch (e) {
+      // Игнорируем ошибки
+    }
+    
+    // Альтернативная проверка через переменную окружения
+    return process.env.RUNNING_IN_DOCKER === 'true';
+  }
+
+  /**
    * Получает префикс для текущего контура
    */
   private static getPrefix(): string {
@@ -230,7 +247,42 @@ export class EnvHelper {
    * @returns URL базы данных
    */
   static getDatabaseUrl(): string {
+    // В тестовом режиме учитываем особенности запуска
+    if (this.isTest) {
+      return this.getTestDatabaseUrl();
+    }
     return this.get('DATABASE_URL', undefined, true);
+  }
+
+  /**
+   * Получает URL базы данных специально для тестов
+   * @returns URL базы данных для тестов, адаптированный под окружение
+   */
+  static getTestDatabaseUrl(): string {
+    const dbUrl = this.get('DATABASE_URL', '');
+    
+    // Если явно задан URL через команду test:e2e:local
+    if (dbUrl.includes('localhost')) {
+      return dbUrl;
+    }
+    
+    // Если запущено в Docker - используем db:5432
+    if (this.isDocker) {
+      // Убедимся, что URL сконфигурирован для Docker
+      if (dbUrl && !dbUrl.includes('localhost') && dbUrl.includes('db:5432')) {
+        return dbUrl;
+      }
+      // Если нет, используем дефолтное значение для Docker
+      return 'postgresql://postgres:postgres@db:5432/gprod_test';
+    }
+    
+    // Если запущено локально - преобразуем URL в localhost:5432
+    if (dbUrl) {
+      return dbUrl.replace('db:5432', 'localhost:5432');
+    }
+    
+    // Дефолтное значение для локальных тестов
+    return 'postgresql://postgres:postgres@localhost:5432/gprod_test';
   }
 
   /**
@@ -238,15 +290,19 @@ export class EnvHelper {
    * @returns JWT секрет
    */
   static getJwtSecret(): string {
+    // В тестовом окружении можно использовать тестовый секрет
+    if (this.isTest) {
+      return this.get('TEST_JWT_SECRET', 'test_secret_key_for_testing_only');
+    }
     return this.get('JWT_SECRET', undefined, true);
   }
 
   /**
-   * Получает время жизни JWT токена
-   * @returns Время жизни токена в секундах или миллисекундах
+   * Получает срок действия JWT токена
+   * @returns Срок действия JWT токена
    */
   static getJwtExpires(): string {
-    return this.get('JWT_EXPIRES', '3600s', true);
+    return this.get('JWT_EXPIRES', '1h');
   }
 
   /**

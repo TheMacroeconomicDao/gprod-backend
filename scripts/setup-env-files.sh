@@ -129,5 +129,52 @@ GRAFANA_ADMIN_USER=admin
 GRAFANA_ADMIN_PASSWORD=super_secure_grafana_password
 EOL
 
+# Создаем шаблон для тестового окружения
+cat > .env-templates/.env.test << 'EOL'
+# Основные настройки окружения для тестов
+NODE_ENV=test
+PORT=3007
+
+# База данных для тестов
+# Примечание: Для локальных тестов используйте localhost:5432, для Docker - db:5432
+# EnvHelper автоматически выберет правильный URL в зависимости от окружения
+DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_test
+
+# JWT и авторизация для тестов
+JWT_SECRET=test_jwt_secret
+TEST_JWT_SECRET=test_secret_key_for_testing_only
+JWT_EXPIRES=1h
+JWT_REFRESH_EXPIRES=7d
+
+# Логирование (минимизируем в тестах)
+LOG_LEVEL=error
+
+# CORS и безопасность
+CORS_ENABLED=true
+CORS_ORIGIN=http://localhost:3000,http://localhost:5173,http://localhost:3007
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=1000
+
+# Дополнительные настройки
+APP_NAME=GPROD API (Test)
+APP_VERSION=1.0.0
+HOST=localhost
+DOMAIN=localhost
+
+# Postgres
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=gprod_test
+
+# Для определения, запущены ли тесты в Docker
+RUNNING_IN_DOCKER=false
+EOL
+
 echo "Шаблоны .env файлов созданы в директории .env-templates"
-echo "Используйте их как основу для создания реальных .env файлов" 
+echo "Скопируйте их в корень проекта и переименуйте соответственно:"
+echo "  .env-templates/.env.development -> .env.development"
+echo "  .env-templates/.env.staging -> .env.staging"
+echo "  .env-templates/.env.production -> .env.production"
+echo "  .env-templates/.env.test -> .env.test" 

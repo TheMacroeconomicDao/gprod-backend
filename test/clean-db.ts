@@ -1,11 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import { EnvHelper } from '../src/common/helpers/env.helper';
 
-// Определяем правильный URL для базы данных в зависимости от окружения
-// В Docker мы должны использовать db:5432, а локально - localhost:5432
-const isDockerEnv = process.env.NODE_ENV === 'test' && !process.env.DATABASE_URL?.includes('localhost');
-const prismaUrl = isDockerEnv 
-  ? process.env.DATABASE_URL 
-  : process.env.DATABASE_URL?.replace('db:5432', 'localhost:5432');
+// Используем EnvHelper для корректного определения URL базы данных
+const prismaUrl = EnvHelper.getTestDatabaseUrl();
 
 const prisma = new PrismaClient({
   datasources: {
