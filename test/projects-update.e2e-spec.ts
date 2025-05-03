@@ -60,7 +60,8 @@ describe('Projects update (e2e)', () => {
     // Создание проекта для теста обновления
     const projectData = { 
       title: PROJECT_TITLE, 
-      description: 'Project for update testing' 
+      description: 'Project for update testing',
+      ownerId: userId
     };
     
     const projectRes = await request(app.getHttpServer())

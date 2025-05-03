@@ -178,7 +178,11 @@ describe('Users update/soft-delete (e2e)', () => {
     const projectRes = await request(app.getHttpServer())
       .post('/api/v1/projects')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ title: 'project-for-deletion-test', description: 'desc for deletion test' });
+      .send({ 
+        title: 'project-for-deletion-test', 
+        description: 'desc for deletion test',
+        ownerId: adminId 
+      });
     
     console.log('Результат создания проекта:', projectRes.status, projectRes.body);
     
