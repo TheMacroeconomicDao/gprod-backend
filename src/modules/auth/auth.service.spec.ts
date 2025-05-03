@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersModule } from '../users/users.module';
-import { JwtModule } from '@nestjs/jwt';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 
 describe('AuthService', () => {
@@ -43,10 +43,12 @@ describe('AuthService', () => {
   it('login включает roles в payload', async () => {
     const user = { id: 1, username: 'vasya', password: 'hash', roles: ['admin'] };
     service.validateUser = jest.fn().mockResolvedValue(user);
-    const jwtService = module.get<any>('JwtService');
-    jwtService.signAsync = jest.fn().mockResolvedValue('token');
+    const jwtService = module.get<JwtService>(JwtService);
+    jest.spyOn(jwtService, 'signAsync')
+      .mockResolvedValueOnce('token')
+      .mockResolvedValueOnce('refresh');
     const result = await service.login('vasya', 'qwerty');
-    expect(jwtService.signAsync).toBeCalledWith({ sub: 1, username: 'vasya', roles: ['admin'] });
-    expect(result).toEqual({ access_token: 'token' });
+    expect(jwtService.signAsync).toHaveBeenCalledWith({ sub: 1, username: 'vasya', roles: ['admin'] });
+    expect(result).toEqual({ access_token: 'token', refresh_token: 'refresh' });
   });
 });
