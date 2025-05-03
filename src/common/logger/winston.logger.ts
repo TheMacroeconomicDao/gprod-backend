@@ -1,8 +1,10 @@
 import { LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
-import * as DailyRotateFile from 'winston-daily-rotate-file';
+// Импортируем модуль с нашей декларацией типов
+import DailyRotateFile = require('winston-daily-rotate-file');
 import { EnvHelper } from '../helpers/env.helper';
 import { join } from 'path';
+import * as fs from 'fs';
 
 export class WinstonLogger implements LoggerService {
   private logger: winston.Logger;
@@ -29,8 +31,7 @@ export class WinstonLogger implements LoggerService {
     // Настройки из переменных окружения
     const logLevel = EnvHelper.get('LOG_LEVEL', isProduction ? 'info' : isTest ? 'error' : 'debug');
     const logToConsole = !isTest;
-    const logToFile = isProduction || isStaging;
-    const logFilePath = EnvHelper.get('LOG_FILE_PATH', './logs/app.log');
+    const logToFile = isProduction || isStaging || EnvHelper.bool('LOG_TO_FILE', false);
     
     // Формат логов в зависимости от окружения                   
     const jsonFormat = winston.format.combine(
@@ -53,7 +54,7 @@ export class WinstonLogger implements LoggerService {
     // Транспорты для логгера
     const transports: winston.transport[] = [];
     
-    // Добавляем консольный транспорт если нужно
+    // Добавляем консольный транспорт
     if (logToConsole) {
       transports.push(new winston.transports.Console({
         format: isDevelopment ? devFormat : jsonFormat
@@ -63,14 +64,18 @@ export class WinstonLogger implements LoggerService {
     // Добавляем файловый транспорт если нужно
     if (logToFile) {
       // Создаем директорию для логов, если она не существует
-      const fs = require('fs');
       const dir = join(process.cwd(), 'logs');
+      
       if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
+        try {
+          fs.mkdirSync(dir, { recursive: true });
+        } catch (e) {
+          console.error(`Ошибка при создании директории для логов: ${e.message}`);
+        }
       }
       
       // Базовые настройки для ротации файлов
-      const rotateOptions: DailyRotateFile.DailyRotateFileTransportOptions = {
+      const rotateOptions = {
         dirname: dir,
         datePattern: 'YYYY-MM-DD',
         maxSize: '20m',
@@ -79,21 +84,39 @@ export class WinstonLogger implements LoggerService {
       };
       
       // Отдельный файл для ошибок с ротацией
-      transports.push(
-        new DailyRotateFile({
+      try {
+        const errorTransport = new DailyRotateFile({
           ...rotateOptions,
           filename: 'error-%DATE%.log',
           level: 'error'
-        })
-      );
+        });
+        
+        // Обрабатываем события транспорта
+        errorTransport.on('error', (error) => {
+          console.error(`Ошибка логирования: ${error.message}`);
+        });
+        
+        transports.push(errorTransport);
+      } catch (e) {
+        console.error(`Ошибка инициализации транспорта для логов ошибок: ${e.message}`);
+      }
       
       // Общий файл логов с ротацией
-      transports.push(
-        new DailyRotateFile({
+      try {
+        const appTransport = new DailyRotateFile({
           ...rotateOptions,
           filename: 'app-%DATE%.log'
-        })
-      );
+        });
+        
+        // Обрабатываем события транспорта
+        appTransport.on('error', (error) => {
+          console.error(`Ошибка логирования: ${error.message}`);
+        });
+        
+        transports.push(appTransport);
+      } catch (e) {
+        console.error(`Ошибка инициализации транспорта для общих логов: ${e.message}`);
+      }
     }
     
     return winston.createLogger({
@@ -176,4 +199,4 @@ export class WinstonLogger implements LoggerService {
     logger.logger = logger.logger.child(metadata);
     return logger;
   }
-} 
+}

@@ -12,33 +12,25 @@
     "start:dev": "NODE_ENV=development npm run start",
     "start:stage": "NODE_ENV=staging node dist/src/main.js",
     "start:prod": "NODE_ENV=production node dist/src/main.js",
-
     "docker:restart": "docker compose up --build --force-recreate -d",
-    
     "docker:dev": "docker compose -f docker-compose.dev.yml up",
     "docker:dev:build": "docker compose -f docker-compose.dev.yml up --build",
     "docker:dev:stop": "docker compose -f docker-compose.dev.yml down",
-    
     "docker:stage": "docker compose -f docker-compose.stage.yml up",
     "docker:stage:build": "docker compose -f docker-compose.stage.yml up --build",
     "docker:stage:stop": "docker compose -f docker-compose.stage.yml down",
-    
     "docker:prod": "docker compose -f docker-compose.prod.yml up -d",
     "docker:prod:build": "docker compose -f docker-compose.prod.yml up --build -d",
     "docker:prod:stop": "docker compose -f docker-compose.prod.yml down",
-    
     "env:switch": "bash scripts/env-switch.sh",
     "env:dev": "bash scripts/env-switch.sh dev",
     "env:stage": "bash scripts/env-switch.sh stage",
     "env:prod": "bash scripts/env-switch.sh prod",
-    
     "env:switch:new": "bash scripts/env-switch-new.sh",
     "env:dev:new": "bash scripts/env-switch-new.sh dev",
     "env:stage:new": "bash scripts/env-switch-new.sh stage",
     "env:prod:new": "bash scripts/env-switch-new.sh prod",
-    
     "env:setup": "bash scripts/setup-env-files.sh",
-    
     "lint": "eslint \"{src,apps,libs,test}/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -48,30 +40,23 @@
     "test:e2e:local": "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod NODE_ENV=test jest --config ./test/jest-e2e.json --runInBand",
     "test:e2e:ci": "BASE_URL=${BASE_URL:-http://app:3007} jest --config ./test/jest-e2e.json",
     "test:e2e:docker": "docker compose up --build e2e",
-    
     "test:smart": "bash scripts/run-tests.sh",
     "test:smart:unit": "bash scripts/run-tests.sh unit",
     "test:smart:e2e": "bash scripts/run-tests.sh e2e",
     "test:setup": "bash scripts/setup-env-files.sh && cp .env-templates/.env.test .env.test",
-    
     "docker:test:smart": "docker compose run --rm app /bin/sh /app/scripts/docker-smart-test.sh",
     "docker:test:smart:unit": "docker compose run --rm app /bin/sh /app/scripts/docker-smart-test.sh unit",
     "docker:test:smart:e2e": "docker compose run --rm app /bin/sh /app/scripts/docker-smart-test.sh e2e",
-    
     "prisma:migrate:dev": "export DATABASE_URL=$(grep ^DATABASE_URL .env.development | cut -d '=' -f2-) && npx prisma migrate dev",
     "prisma:migrate:stage": "export DATABASE_URL=$(grep ^DATABASE_URL .env.staging | cut -d '=' -f2-) && npx prisma migrate deploy",
     "prisma:migrate:prod": "export DATABASE_URL=$(grep ^DATABASE_URL .env.production | cut -d '=' -f2-) && npx prisma migrate deploy",
-    
     "prisma:studio:dev": "export DATABASE_URL=$(grep ^DATABASE_URL .env.development | cut -d '=' -f2-) && npx prisma studio",
     "prisma:studio:stage": "export DATABASE_URL=$(grep ^DATABASE_URL .env.staging | cut -d '=' -f2-) && npx prisma studio",
     "prisma:studio:prod": "export DATABASE_URL=$(grep ^DATABASE_URL .env.production | cut -d '=' -f2-) && npx prisma studio",
-    
     "docker:prisma:migrate:dev": "docker compose -f docker-compose.dev.yml run --rm app npx prisma migrate dev",
     "docker:prisma:migrate:stage": "docker compose -f docker-compose.stage.yml run --rm app npx prisma migrate deploy",
     "docker:prisma:migrate:prod": "docker compose -f docker-compose.prod.yml run --rm app npx prisma migrate deploy",
-    
     "docker:prisma:generate": "docker compose run --rm app npx prisma generate",
-    
     "docker:test": "docker compose run --rm app pnpm run test",
     "docker:test:e2e": "docker compose run --rm app pnpm run test:e2e",
     "docker:test:rebuild": "docker compose up --build --force-recreate -d && docker compose run --rm app pnpm run test"
@@ -99,7 +84,9 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1",
-    "winston": "^3.17.0"
+    "uuid": "^11.1.0",
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -116,6 +103,7 @@
     "@types/passport-jwt": "^4.0.1",
     "@types/passport-local": "^1.0.38",
     "@types/supertest": "^6.0.3",
+    "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",

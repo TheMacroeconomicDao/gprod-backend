@@ -247,11 +247,30 @@ export class EnvHelper {
    * @returns URL базы данных
    */
   static getDatabaseUrl(): string {
+    // В режиме разработки логгера возвращаем фиктивное значение
+    if (this.get('LOGGER_TEST_MODE', 'false') === 'true') {
+      return 'postgresql://postgres:postgres@localhost:5432/logger_test';
+    }
+    
     // В тестовом режиме учитываем особенности запуска
     if (this.isTest) {
       return this.getTestDatabaseUrl();
     }
-    return this.get('DATABASE_URL', undefined, true);
+    
+    // Приоритет для DATABASE_URL
+    const dbUrl = this.get('DATABASE_URL', '', false);
+    if (dbUrl) {
+      return dbUrl;
+    }
+    
+    // Для обратной совместимости формируем URL из отдельных параметров
+    const host = this.get('POSTGRES_HOST', 'localhost');
+    const port = this.int('POSTGRES_PORT', 5432);
+    const user = this.get('POSTGRES_USER', 'postgres');
+    const password = this.get('POSTGRES_PASSWORD', 'postgres');
+    const database = this.get('POSTGRES_DB', this.isProduction ? 'gprod' : 'gprod_dev');
+    
+    return `postgresql://${user}:${password}@${host}:${port}/${database}`;
   }
 
   /**
@@ -286,23 +305,29 @@ export class EnvHelper {
   }
 
   /**
-   * Получает секретный ключ для JWT
-   * @returns JWT секрет
+   * Получает секретный ключ для JWT токена
+   * @returns Секретный ключ для JWT
    */
   static getJwtSecret(): string {
-    // В тестовом окружении можно использовать тестовый секрет
-    if (this.isTest) {
-      return this.get('TEST_JWT_SECRET', 'test_secret_key_for_testing_only');
+    // В режиме разработки логгера возвращаем тестовый ключ
+    if (this.get('LOGGER_TEST_MODE', 'false') === 'true') {
+      return 'test_secret_key_for_logger_testing';
     }
+    
     return this.get('JWT_SECRET', undefined, true);
   }
 
   /**
-   * Получает срок действия JWT токена
-   * @returns Срок действия JWT токена
+   * Получает время жизни JWT токена
+   * @returns Время жизни JWT
    */
   static getJwtExpires(): string {
-    return this.get('JWT_EXPIRES', '1h');
+    // В режиме разработки логгера возвращаем тестовый срок
+    if (this.get('LOGGER_TEST_MODE', 'false') === 'true') {
+      return '1d';
+    }
+    
+    return this.get('JWT_EXPIRES', '15m', true);
   }
 
   /**

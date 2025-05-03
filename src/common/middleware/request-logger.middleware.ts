@@ -16,21 +16,19 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     const startTime = process.hrtime();
     
     // Логируем начало запроса
-    this.logger.debug(
-      `Request started ${request.method} ${request.originalUrl}`,
-      'RequestLogger',
-      {
-        requestId,
-        method: request.method,
-        url: request.originalUrl,
-        ip: request.ip,
-        headers: {
-          'user-agent': request.get('user-agent'),
-          'content-type': request.get('content-type'),
-          'content-length': request.get('content-length'),
-        },
-      }
-    );
+    const startMessage = `Request started ${request.method} ${request.originalUrl}`;
+    const startMeta = {
+      requestId,
+      method: request.method,
+      url: request.originalUrl,
+      ip: request.ip,
+      headers: {
+        'user-agent': request.get('user-agent'),
+        'content-type': request.get('content-type'),
+        'content-length': request.get('content-length'),
+      },
+    };
+    this.logger.debug(startMessage, 'RequestLogger', startMeta);
     
     // Обработчик завершения запроса
     response.on('finish', () => {
@@ -38,30 +36,31 @@ export class RequestLoggerMiddleware implements NestMiddleware {
       const durationMs = Math.round(duration[0] * 1000 + duration[1] / 1e6);
       
       const userId = request.user ? (request.user as any).userId || (request.user as any).sub : undefined;
-      const userContext = userId ? { userId } : {};
       
       // Определяем уровень логирования в зависимости от статуса
       const statusCode = response.statusCode;
-      const logMethod = statusCode >= 500 
-        ? 'error' 
-        : statusCode >= 400 
-          ? 'warn' 
-          : 'debug';
+      const message = `Request completed ${request.method} ${request.originalUrl} ${statusCode} ${durationMs}ms`;
       
-      // Логируем результат запроса
-      this.logger[logMethod](
-        `Request completed ${request.method} ${request.originalUrl} ${statusCode} ${durationMs}ms`,
-        'RequestLogger',
-        {
-          requestId,
-          method: request.method,
-          url: request.originalUrl,
-          statusCode,
-          durationMs,
-          contentLength: response.get('content-length'),
-          ...userContext,
-        }
-      );
+      const meta = {
+        requestId,
+        method: request.method,
+        url: request.originalUrl,
+        statusCode,
+        durationMs,
+        contentLength: response.get('content-length'),
+      };
+      
+      if (userId) {
+        (meta as any).userId = userId;
+      }
+      
+      if (statusCode >= 500) {
+        this.logger.error(message, undefined, 'RequestLogger', meta);
+      } else if (statusCode >= 400) {
+        this.logger.warn(message, 'RequestLogger', meta);
+      } else {
+        this.logger.debug(message, 'RequestLogger', meta);
+      }
     });
     
     next();
