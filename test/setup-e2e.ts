@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { HttpExceptionFilter } from '../src/common/filters/http-exception.filter';
 import * as express from 'express';
 import helmet from 'helmet';
+import { cleanDb } from './clean-db';
 
 export async function setupE2EApp(app: INestApplication): Promise<void> {
   app.setGlobalPrefix('api/v1');
@@ -31,4 +32,5 @@ export async function setupE2EApp(app: INestApplication): Promise<void> {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(express.json({ limit: '1mb' }));
   await app.init();
+  await cleanDb();
 } 

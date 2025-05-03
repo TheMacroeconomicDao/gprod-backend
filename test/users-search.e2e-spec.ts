@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
+import { cleanDb } from './clean-db';
 
 describe('Users search/sort (e2e)', () => {
   let app: INestApplication;
@@ -23,6 +24,10 @@ describe('Users search/sort (e2e)', () => {
     // Логинимся
     const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'alice', password: '123456' });
     token = res.body.access_token;
+  });
+
+  beforeEach(async () => {
+    await cleanDb();
   });
 
   it('поиск по username', async () => {

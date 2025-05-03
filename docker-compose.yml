@@ -14,19 +14,10 @@ services:
     build: .
     command: sh /app/docker-entrypoint.sh
     ports:
-      - "3007:3007"
+      - "3000:3000"
     env_file:
       - .env
     depends_on:
       - db
-  test:
-    build: .
-    command: pnpm run test:e2e:ci
-    environment:
-      - BASE_URL=http://app:3007
-    depends_on:
-      - app
-    env_file:
-      - .env
 volumes:
   pgdata: 

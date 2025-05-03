@@ -66,6 +66,12 @@ export class ProjectsService {
   }
 
   async remove(id: number) {
-    await this.prisma.project.delete({ where: { id } });
+    // Сначала обнуляем ownerId у всех проектов пользователя
+    await this.prisma.project.updateMany({
+      where: { ownerId: id },
+      data: { ownerId: undefined },
+    });
+    // Теперь можно удалить пользователя
+    return this.prisma.user.delete({ where: { id } });
   }
 }

@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { setupE2EApp } from './setup-e2e';
 
 describe('Forbidden/Unauthorized (e2e)', () => {
   let app: INestApplication;
@@ -15,7 +16,7 @@ describe('Forbidden/Unauthorized (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await setupE2EApp(app);
     await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'forb', email: 'forb@mail.com', password: '123456' });
     const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'forb', password: '123456' });
     token = res.body.access_token;

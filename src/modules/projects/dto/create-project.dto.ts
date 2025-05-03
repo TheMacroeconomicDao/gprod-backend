@@ -23,7 +23,9 @@ export class CreateProjectDto {
   @ApiProperty({
     description: 'ID владельца (User)',
     example: 1,
+    required: false,
   })
   @IsInt()
-  ownerId: number;
+  @IsOptional()
+  ownerId?: number;
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ForbiddenException, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ForbiddenException, Req, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -17,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('users')
 @ApiExtraModels(ApiErrorResponseDto)
@@ -40,6 +41,7 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Получить список пользователей (пагинация, поиск, сортировка)' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
@@ -52,6 +54,7 @@ export class UsersController {
     return this.usersService.findAll(Number(page), Number(limit), search, sort);
   }
 
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Получить пользователя по id' })
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiResponse({ status: 200, description: 'Пользователь найден', schema: { example: { id: 1, username: 'john_doe', email: 'john@example.com', isActive: true, createdAt: '2024-01-01T00:00:00.000Z', updatedAt: '2024-01-01T00:00:00.000Z' } } })
@@ -62,6 +65,7 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Обновить пользователя' })
   @ApiParam({ name: 'id', type: Number, example: 1 })
   @ApiBody({ type: UpdateUserDto, description: 'Обновить пользователя (можно менять roles только admin)' })
@@ -79,6 +83,7 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Roles('admin')
   @ApiOperation({ summary: 'Удалить пользователя' })
   @ApiParam({ name: 'id', type: Number, example: 1 })

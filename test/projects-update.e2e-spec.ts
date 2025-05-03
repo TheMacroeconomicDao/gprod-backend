@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
+import { cleanDb } from './clean-db';
 
 describe('Projects update (e2e)', () => {
   let app: INestApplication;
@@ -30,6 +31,10 @@ describe('Projects update (e2e)', () => {
     userId = usersArr.find((u: any) => u.username === 'projupd').id;
     const project = await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Upd', description: 'desc', ownerId: userId });
     projectId = project.body.id;
+  });
+
+  beforeEach(async () => {
+    await cleanDb();
   });
 
   it('user может обновить свой проект', async () => {

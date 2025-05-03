@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
+import { cleanDb } from './clean-db';
 
 describe('Projects search/sort (e2e)', () => {
   let app: INestApplication;
@@ -33,6 +34,10 @@ describe('Projects search/sort (e2e)', () => {
     await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Alpha', description: 'First', ownerId: userId });
     await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Beta', description: 'Second', ownerId: userId });
     await request(app.getHttpServer()).post('/api/v1/projects').set('Authorization', `Bearer ${token}`).send({ title: 'Gamma', description: 'Third', ownerId: userId });
+  });
+
+  beforeEach(async () => {
+    await cleanDb();
   });
 
   it('поиск по title', async () => {

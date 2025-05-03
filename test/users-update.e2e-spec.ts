@@ -4,6 +4,7 @@ import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
 import { setupE2EApp } from './setup-e2e';
+import { cleanDb } from './clean-db';
 
 describe('Users update/soft-delete (e2e)', () => {
   let app: INestApplication;
@@ -37,6 +38,10 @@ describe('Users update/soft-delete (e2e)', () => {
       throw new Error('usersArr is not array');
     }
     userId = usersArr.find((u: any) => u.username === 'user2').id;
+  });
+
+  beforeEach(async () => {
+    await cleanDb();
   });
 
   it('user может обновить свой email', async () => {
