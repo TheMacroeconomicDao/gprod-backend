@@ -54,6 +54,10 @@
     "test:smart:e2e": "bash scripts/run-tests.sh e2e",
     "test:setup": "bash scripts/setup-env-files.sh && cp .env-templates/.env.test .env.test",
     
+    "docker:test:smart": "docker compose run --rm app /bin/sh /app/scripts/docker-smart-test.sh",
+    "docker:test:smart:unit": "docker compose run --rm app /bin/sh /app/scripts/docker-smart-test.sh unit",
+    "docker:test:smart:e2e": "docker compose run --rm app /bin/sh /app/scripts/docker-smart-test.sh e2e",
+    
     "prisma:migrate:dev": "export DATABASE_URL=$(grep ^DATABASE_URL .env.development | cut -d '=' -f2-) && npx prisma migrate dev",
     "prisma:migrate:stage": "export DATABASE_URL=$(grep ^DATABASE_URL .env.staging | cut -d '=' -f2-) && npx prisma migrate deploy",
     "prisma:migrate:prod": "export DATABASE_URL=$(grep ^DATABASE_URL .env.production | cut -d '=' -f2-) && npx prisma migrate deploy",

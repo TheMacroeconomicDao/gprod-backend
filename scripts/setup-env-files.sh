@@ -140,6 +140,13 @@ PORT=3007
 # EnvHelper автоматически выберет правильный URL в зависимости от окружения
 DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_test
 
+# Если используем докер напрямую - эти переменные будут переопределены через env
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=gprod_test
+
 # JWT и авторизация для тестов
 JWT_SECRET=test_jwt_secret
 TEST_JWT_SECRET=test_secret_key_for_testing_only
@@ -160,13 +167,6 @@ APP_NAME=GPROD API (Test)
 APP_VERSION=1.0.0
 HOST=localhost
 DOMAIN=localhost
-
-# Postgres
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=gprod_test
 
 # Для определения, запущены ли тесты в Docker
 RUNNING_IN_DOCKER=false
