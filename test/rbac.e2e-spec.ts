@@ -91,6 +91,13 @@ describe('RBAC (e2e)', () => {
     const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf8'));
     console.log('JWT Payload:', payload);
     
+    // Получаем пользователя перед удалением, чтобы убедиться, что он активен
+    const getUserBefore = await request(app.getHttpServer())
+      .get(`/api/v1/users/${userId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(getUserBefore.status).toBe(200);
+    expect(getUserBefore.body.isActive).toBe(true);
+    
     // Проверяем, что администратор может удалить пользователя
     const res = await request(app.getHttpServer())
       .delete(`/api/v1/users/${userId}`)
@@ -98,12 +105,12 @@ describe('RBAC (e2e)', () => {
       
     expect(res.status).toBe(200);
     
-    // Проверяем, что пользователь действительно удалён
+    // Проверяем, что пользователь помечен как неактивный и findOne его не находит
     const getUser = await request(app.getHttpServer())
       .get(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`);
       
-    expect(getUser.status).toBe(404); // Пользователь должен быть удалён полностью
+    expect(getUser.status).toBe(404); // findOne возвращает 404 для неактивных пользователей
   });
 
   afterAll(async () => {

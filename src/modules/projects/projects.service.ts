@@ -79,9 +79,9 @@ export class ProjectsService {
       await this.prisma.project.delete({ where: { id } });
       console.log('[ProjectsService.remove] project deleted successfully, id:', id);
       return { success: true };
-    } catch (error) {
-      console.error('[ProjectsService.remove] error:', error);
-      throw error;
+    } catch (err) {
+      console.error('[ProjectsService.remove] error:', err);
+      throw err;
     }
   }
 }
