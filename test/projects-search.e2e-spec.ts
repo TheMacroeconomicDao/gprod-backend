@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { setupE2EApp } from './setup-e2e';
 
 describe('Projects search/sort (e2e)', () => {
   let app: INestApplication;
@@ -14,7 +15,7 @@ describe('Projects search/sort (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await setupE2EApp(app);
 
     // Создаём пользователя
     await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'projuser', email: 'projuser@mail.com', password: '123456' });

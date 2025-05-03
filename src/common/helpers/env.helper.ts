@@ -26,4 +26,10 @@ export class EnvHelper {
     const val = this.get(key, fallback ? 'true' : 'false');
     return val === 'true' || val === '1';
   }
+
+  static array(key: string, fallback?: string[]): string[] {
+    const val = process.env[key] || (fallback ? fallback.join(',') : undefined);
+    if (!val) return fallback || [];
+    return val.split(',').map((s) => s.trim()).filter(Boolean);
+  }
 } 

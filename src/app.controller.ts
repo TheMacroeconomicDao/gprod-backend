@@ -32,9 +32,4 @@ export class AppController {
       env: process.env.NODE_ENV || 'development',
     };
   }
-
-  @Get('health')
-  health() {
-    return { status: 'ok' };
-  }
 }

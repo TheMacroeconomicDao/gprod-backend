@@ -8,10 +8,17 @@ export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto) {
-    return this.prisma.user.create({ data: createUserDto });
+    console.log('[UsersService.create] dto:', createUserDto);
+    try {
+      return await this.prisma.user.create({ data: createUserDto });
+    } catch (err) {
+      console.error('[UsersService.create] error:', err);
+      throw err;
+    }
   }
 
   async findAll(page = 1, limit = 20, search?: string, sort?: string) {
+    console.log('[UsersService.findAll] page:', page, 'limit:', limit, 'search:', search, 'sort:', sort);
     const where: any = { isActive: true };
     if (search) {
       where.OR = [
@@ -26,40 +33,66 @@ export class UsersService {
         orderBy = { [field]: dir };
       }
     }
-    const [data, total] = await Promise.all([
-      this.prisma.user.findMany({
-        skip: (page - 1) * limit,
-        take: limit,
-        where,
-        orderBy,
-      }),
-      this.prisma.user.count({ where }),
-    ]);
-    return { data, total };
+    try {
+      const [data, total] = await Promise.all([
+        this.prisma.user.findMany({
+          skip: (page - 1) * limit,
+          take: limit,
+          where,
+          orderBy,
+        }),
+        this.prisma.user.count({ where }),
+      ]);
+      console.log('[UsersService.findAll] found:', data.length, 'total:', total);
+      return { data, total };
+    } catch (err) {
+      console.error('[UsersService.findAll] error:', err);
+      throw err;
+    }
   }
 
   async findOne(id: number) {
-    const user = await this.prisma.user.findFirst({ where: { id, isActive: true } });
-    if (!user) throw new NotFoundException('User not found');
-    return user;
+    console.log('[UsersService.findOne] id:', id);
+    try {
+      const user = await this.prisma.user.findFirst({ where: { id, isActive: true } });
+      if (!user) throw new NotFoundException('User not found');
+      return user;
+    } catch (err) {
+      console.error('[UsersService.findOne] error:', err);
+      throw err;
+    }
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    await this.findOne(id);
-    return this.prisma.user.update({ where: { id }, data: updateUserDto });
+    console.log('[UsersService.update] id:', id, 'dto:', updateUserDto);
+    try {
+      await this.findOne(id);
+      return await this.prisma.user.update({ where: { id }, data: updateUserDto });
+    } catch (err) {
+      console.error('[UsersService.update] error:', err);
+      throw err;
+    }
   }
 
   async remove(id: number) {
-    await this.findOne(id);
-    await this.prisma.user.update({ where: { id }, data: { isActive: false } });
-    return { success: true };
+    console.log('[UsersService.remove] id:', id);
+    try {
+      await this.findOne(id);
+      await this.prisma.user.update({ where: { id }, data: { isActive: false } });
+      return { success: true };
+    } catch (err) {
+      console.error('[UsersService.remove] error:', err);
+      throw err;
+    }
   }
 
   async findByUsername(username: string) {
+    console.log('[UsersService.findByUsername] username:', username);
     return this.prisma.user.findUnique({ where: { username } });
   }
 
   async findByEmail(email: string) {
+    console.log('[UsersService.findByEmail] email:', email);
     return this.prisma.user.findUnique({ where: { email } });
   }
 }

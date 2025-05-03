@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { setupE2EApp } from './setup-e2e';
 
 describe('Rate-limit (e2e)', () => {
   let app: INestApplication;
@@ -12,7 +13,7 @@ describe('Rate-limit (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await setupE2EApp(app);
   });
 
   it('429 если слишком много запросов', async () => {

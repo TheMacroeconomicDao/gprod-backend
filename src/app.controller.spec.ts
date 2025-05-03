@@ -14,9 +14,12 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  describe('getBuildInfo', () => {
+    it('should return build info object', () => {
+      const result = appController.getBuildInfo();
+      expect(result).toHaveProperty('name');
+      expect(result).toHaveProperty('buildTime');
+      expect(result).toHaveProperty('env');
     });
   });
 });

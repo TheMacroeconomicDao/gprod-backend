@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { setupE2EApp } from './setup-e2e';
 
 // Хелпер для регистрации и логина
 async function registerAndLogin(app: INestApplication, user: any) {
@@ -26,7 +27,7 @@ describe('RBAC (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await setupE2EApp(app);
 
     // Создаём admin и user
     adminToken = await registerAndLogin(app, { username: 'admin', email: 'admin@mail.com', password: 'admin123', roles: ['admin'] });

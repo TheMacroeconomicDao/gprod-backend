@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { setupE2EApp } from './setup-e2e';
 
 describe('Body limit (e2e)', () => {
   let app: INestApplication;
@@ -14,7 +15,7 @@ describe('Body limit (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    await app.init();
+    await setupE2EApp(app);
     await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'bodylimit', email: 'bodylimit@mail.com', password: '123456' });
     const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'bodylimit', password: '123456' });
     token = res.body.access_token;
