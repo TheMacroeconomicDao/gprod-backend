@@ -19,5 +19,22 @@ services:
       - .env
     depends_on:
       - db
+  # Сервис для e2e-тестов
+  e2e:
+    container_name: e2e
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod
+      - NODE_ENV=test
+    networks:
+      - gp-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: pnpm test:e2e -- --runInBand
 volumes:
   pgdata: 
