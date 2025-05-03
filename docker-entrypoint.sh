@@ -9,8 +9,15 @@ until pg_isready -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER"; do
   sleep 2
 done
 
-echo "Running Prisma migrations..."
-pnpm prisma migrate deploy
+if [ "$NODE_ENV" = "development" ]; then
+  echo "Running Prisma auto-migrate (dev)..."
+  pnpm prisma migrate dev --name auto --skip-seed --create-only || true
+  pnpm prisma migrate dev --skip-generate
+  pnpm prisma db seed
+else
+  echo "Running Prisma migrations (prod)..."
+  pnpm prisma migrate deploy || { echo "Migrations failed!"; exit 1; }
+fi
 
 echo "Generating Prisma client..."
 pnpm prisma generate

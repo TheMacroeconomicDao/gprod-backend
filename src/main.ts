@@ -8,11 +8,28 @@ import { WinstonLogger } from './common/logger/winston.logger';
 import * as express from 'express';
 import helmet from 'helmet';
 
+async function checkSchema() {
+  const { PrismaClient } = await import('@prisma/client');
+  const prisma = new PrismaClient();
+  try {
+    await prisma.$queryRawUnsafe('SELECT roles FROM "User" LIMIT 1');
+  } catch (e) {
+    // Логируем и падаем, если нет поля
+    // eslint-disable-next-line no-console
+    console.error('FATAL: "roles" column missing in "User" table. Run migrations!');
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 // Bootstrap function for starting the NestJS application
 async function bootstrap() {
   // WinstonLogger for structured logging (info, error, etc.)
   const logger = new WinstonLogger();
   try {
+    // Проверяем схему до старта приложения
+    await checkSchema();
     // Создаём приложение с кастомным логгером
     const app = await NestFactory.create(AppModule, { logger });
 

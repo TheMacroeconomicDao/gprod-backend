@@ -5,7 +5,7 @@
 ---
 
 ## TL;DR
-- **Запуск в Docker:**
+- **Запуск в Docker (dev, auto-migrate):**
   ```sh
   pnpm run docker:restart
   ```
@@ -18,22 +18,20 @@
 
 ---
 
-## Архитектура
-- **NestJS** (TypeScript, модульная структура, DI, Guards, Filters, DTO)
-- **Prisma** (PostgreSQL, миграции, seed)
-- **pnpm** (быстрый и надёжный пакетный менеджер)
-- **Docker/Docker Compose** (прод/дев окружение)
-- **Swagger** (OpenAPI, автогенерация для v1/v2)
-- **Тесты:** unit, e2e (Jest, Supertest)
-- **Best practices:**
-  - Безопасность (helmet, CORS, DTO валидация, hash паролей)
-  - Глобальный фильтр ошибок, логирование (winston)
-  - Версионирование API (v1, v2)
-  - Build info endpoint
+## Миграции и сиды — теперь полностью автоматизированы!
+- **В dev-режиме** (NODE_ENV=development):
+  - Все изменения schema.prisma автоматически попадают в базу при старте контейнера.
+  - Миграции создаются и применяются автоматически.
+  - Сиды применяются автоматически.
+- **В prod-режиме** (NODE_ENV=production):
+  - Применяются только существующие миграции (`prisma migrate deploy`).
+  - Если миграции не применились — контейнер не стартует.
+- **Fail-fast:**
+  - Если структура базы не соответствует schema.prisma (например, нет нужных колонок), приложение не стартует и пишет явную ошибку.
 
 ---
 
-## Быстрый старт
+## Быстрый старт и тестирование
 
 ### 1. Клонируй репозиторий и настрой .env
 ```sh
@@ -41,10 +39,11 @@ cp env.visible .env
 # Проверь переменные (DB, JWT, PORT)
 ```
 
-### 2. Запусти всё в Docker
+### 2. Запусти всё в Docker (dev, auto-migrate)
 ```sh
 pnpm run docker:restart
 ```
+- Все миграции и сиды применятся автоматически!
 
 ### 3. Swagger UI
 - v1: http://localhost:3007/api/v1/docs
@@ -61,6 +60,14 @@ pnpm run docker:test:rebuild
 # или только e2e:
 pnpm run docker:test:e2e
 ```
+- Все тесты гоняются на свежей базе с актуальной схемой.
+
+---
+
+## Что делать, если что-то не работает
+- Проверь логи контейнера: если нет нужных колонок — скорее всего, schema.prisma изменилась, но миграция не была создана (prod) или база не пересоздалась (dev).
+- В dev: просто пересоздай контейнеры с помощью `pnpm run docker:restart` — база и миграции будут актуальны.
+- В prod: создай миграцию вручную и задеплой её (`pnpm prisma migrate deploy`).
 
 ---
 
@@ -82,32 +89,6 @@ pnpm run docker:test:e2e
 - Пример: см. `env.visible`
 - Важно: не коммить .env и реальные секреты!
 - Для каждого окружения (dev, stage, prod) свои переменные (см. EnvHelper)
-
----
-
-## Миграции и seed
-- Миграции: `pnpm run prisma:migrate:dev`
-- Генерация Prisma: `pnpm run prisma:generate:dev`
-- Seed-скрипты: см. prisma/seed.ts (если есть)
-- **В Docker миграции и сиды применяются автоматически** (см. docker-entrypoint.sh)
-
----
-
-## Build info endpoint
-- GET `/api/v1` — возвращает buildTime, gitHash, version, env
-- gitHash может быть 'unknown', если .git не скопирован в образ (production best practice)
-- В production gitHash/version скрыты
-
----
-
-## Production best practices
-- Все переменные через .env, никакого хардкода
-- JWT, rate-limit, RBAC, health-check, Winston — всё включено
-- Swagger с примерами, описаниями, security
-- Docker/Docker Compose для любого окружения
-- Миграции и генерация Prisma — npm-скриптами
-- Build info endpoint для traceability
-- Легко расширять (RBAC, monitoring, e2e, CI/CD)
 
 ---
 
@@ -165,12 +146,6 @@ pnpm run test:cov     # покрытие
 ```
 - Покрытие: сервисы и контроллеры users, projects, auth
 - Моки Prisma, нет зависимости от базы
-
----
-
-## Автоматические миграции и сиды в Docker
-- В контейнере app перед стартом автоматически применяются миграции и сиды (см. docker-entrypoint.sh)
-- Это гарантирует, что БД всегда актуальна и тесты проходят с нуля
 
 ---
 
