@@ -55,8 +55,8 @@ export class ProjectsController {
   @ApiInternalServerErrorResponse({ description: 'Внутренняя ошибка', type: ApiErrorResponseDto })
   @Get()
   findAll(@Query('page') page = 1, @Query('limit') limit = 20, @Query('search') search?: string, @Query('sort') sort?: string) {
-    // search/sort пока не реализованы, но описаны для Swagger
-    return this.projectsService.findAll(Number(page), Number(limit));
+    // Передаем все параметры в сервис
+    return this.projectsService.findAll(Number(page), Number(limit), search, sort);
   }
 
   @ApiOperation({ summary: 'Получить проект по id (JWT, роль: user/admin)' })

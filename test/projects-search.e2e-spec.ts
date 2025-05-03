@@ -70,7 +70,7 @@ describe('Projects search/sort (e2e)', () => {
       const res = await request(app.getHttpServer())
         .post('/api/v1/projects')
         .set('Authorization', `Bearer ${token}`)
-        .send(project);
+        .send({ ...project, ownerId: userId });
         
       expect(res.status).toBe(201);
       expect(res.body.id).toBeDefined();
@@ -109,11 +109,14 @@ describe('Projects search/sort (e2e)', () => {
     
     // В отсортированном по убыванию списке Gamma должен быть перед Beta и Alpha
     const titles = res.body.data.map((p: any) => p.title);
+    console.log('Отсортированные проекты:', titles);
     
     // Проверяем, что Gamma встречается раньше Beta в отсортированном списке
     const gammaIndex = titles.findIndex((t: string) => t === 'Gamma');
     const betaIndex = titles.findIndex((t: string) => t === 'Beta');
     const alphaIndex = titles.findIndex((t: string) => t === 'Alpha');
+    
+    console.log('Gamma index:', gammaIndex, 'Beta index:', betaIndex, 'Alpha index:', alphaIndex);
     
     // Проверяем только если все проекты найдены
     if (gammaIndex !== -1 && betaIndex !== -1 && alphaIndex !== -1) {

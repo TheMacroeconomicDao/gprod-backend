@@ -37,6 +37,7 @@ export class ProjectsService {
         orderBy = { [field]: dir };
       }
     }
+    console.log('[ProjectsService.findAll] orderBy:', JSON.stringify(orderBy));
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         skip: (page - 1) * limit,
