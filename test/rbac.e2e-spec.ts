@@ -8,12 +8,15 @@ import { cleanDb } from './clean-db';
 
 // Хелпер для регистрации и логина
 async function registerAndLogin(app: INestApplication, user: any) {
-  await request(app.getHttpServer())
+  const reg = await request(app.getHttpServer())
     .post('/api/v1/auth/register')
     .send(user);
+  expect(reg.status).toBe(201);
   const res = await request(app.getHttpServer())
     .post('/api/v1/auth/login')
     .send({ username: user.username, password: user.password });
+  expect(res.status).toBe(200);
+  expect(res.body.access_token).toBeDefined();
   return res.body.access_token;
 }
 
@@ -29,18 +32,18 @@ describe('RBAC (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await setupE2EApp(app);
-
-    // Создаём admin и user
-    adminToken = await registerAndLogin(app, { username: 'admin', email: 'admin@mail.com', password: 'admin123', roles: ['admin'] });
-    userToken = await registerAndLogin(app, { username: 'user', email: 'user@mail.com', password: 'user123', roles: ['user'] });
+    // Создаём admin и user с уникальными username/email
+    adminToken = await registerAndLogin(app, { username: 'adminrbac', email: 'adminrbac@mail.com', password: 'admin123', roles: ['admin'] });
+    userToken = await registerAndLogin(app, { username: 'userrbac', email: 'userrbac@mail.com', password: 'user123', roles: ['user'] });
     // Получаем id user
     const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${adminToken}`);
+    expect(users.status).toBe(200);
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
-    userId = usersArr.find((u: any) => u.username === 'user').id;
+    userId = usersArr.find((u: any) => u.username === 'userrbac').id;
   });
 
   beforeEach(async () => {

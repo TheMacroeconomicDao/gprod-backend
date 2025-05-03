@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, HttpCode } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -38,6 +38,7 @@ export class AuthController {
   @ApiInternalServerErrorResponse({ description: 'Внутренняя ошибка', type: ApiErrorResponseDto })
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @HttpCode(200)
   login(@Request() req: ExpressRequest) {
     const user = req.user as { username: string } | undefined;
     if (!user || !user.username) throw new Error('No user in request');

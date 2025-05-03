@@ -16,16 +16,20 @@ describe('Body limit (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await setupE2EApp(app);
-    await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'bodylimit', email: 'bodylimit@mail.com', password: '123456' });
-    const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'bodylimit', password: '123456' });
+    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'bodylimit1', email: 'bodylimit1@mail.com', password: '123456' });
+    expect(reg.status).toBe(201);
+    const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'bodylimit1', password: '123456' });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeDefined();
     token = res.body.access_token;
     const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${token}`);
+    expect(users.status).toBe(200);
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
-    userId = usersArr.find((u: any) => u.username === 'bodylimit').id;
+    userId = usersArr.find((u: any) => u.username === 'bodylimit1').id;
   });
 
   it('413 если body > 1MB', async () => {

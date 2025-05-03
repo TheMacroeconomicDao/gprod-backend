@@ -19,25 +19,36 @@ describe('Users update/soft-delete (e2e)', () => {
     app = moduleFixture.createNestApplication();
     await setupE2EApp(app);
 
-    adminToken = (await request(app.getHttpServer())
+    const regAdmin = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ username: 'admin2', email: 'admin2@mail.com', password: 'admin123', roles: ['admin'] })
-      .then(() => request(app.getHttpServer())
-        .post('/api/v1/auth/login')
-        .send({ username: 'admin2', password: 'admin123' }))).body.access_token;
-    userToken = (await request(app.getHttpServer())
+      .send({ username: 'admin2upd', email: 'admin2upd@mail.com', password: 'admin123', roles: ['admin'] });
+    expect(regAdmin.status).toBe(201);
+    const loginAdmin = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ username: 'admin2upd', password: 'admin123' });
+    expect(loginAdmin.status).toBe(200);
+    expect(loginAdmin.body.access_token).toBeDefined();
+    adminToken = loginAdmin.body.access_token;
+
+    const regUser = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ username: 'user2', email: 'user2@mail.com', password: 'user123', roles: ['user'] })
-      .then(() => request(app.getHttpServer())
-        .post('/api/v1/auth/login')
-        .send({ username: 'user2', password: 'user123' }))).body.access_token;
+      .send({ username: 'user2upd', email: 'user2upd@mail.com', password: 'user123', roles: ['user'] });
+    expect(regUser.status).toBe(201);
+    const loginUser = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ username: 'user2upd', password: 'user123' });
+    expect(loginUser.status).toBe(200);
+    expect(loginUser.body.access_token).toBeDefined();
+    userToken = loginUser.body.access_token;
+
     const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${adminToken}`);
+    expect(users.status).toBe(200);
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
-    userId = usersArr.find((u: any) => u.username === 'user2').id;
+    userId = usersArr.find((u: any) => u.username === 'user2upd').id;
   });
 
   beforeEach(async () => {
@@ -79,6 +90,30 @@ describe('Users update/soft-delete (e2e)', () => {
       .get(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`);
     expect(user.body.isActive).toBe(false);
+  });
+
+  it('после удаления пользователя его проекты остаются, а ownerId становится null', async () => {
+    // Создаём проект от имени user2
+    const projectRes = await request(app.getHttpServer())
+      .post('/api/v1/projects')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ title: 'project-user2', description: 'desc' });
+    expect(projectRes.status).toBe(201);
+    const projectId = projectRes.body.id;
+
+    // Удаляем пользователя
+    const delRes = await request(app.getHttpServer())
+      .delete(`/api/v1/users/${userId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(delRes.status).toBe(200);
+
+    // Проверяем, что проект остался, а ownerId стал null
+    const getProject = await request(app.getHttpServer())
+      .get(`/api/v1/projects/${projectId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(getProject.status).toBe(200);
+    expect(getProject.body.ownerId).toBeNull();
+    expect(getProject.body.owner).toBeNull();
   });
 
   afterAll(async () => {

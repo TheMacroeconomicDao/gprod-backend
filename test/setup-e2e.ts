@@ -32,5 +32,9 @@ export async function setupE2EApp(app: INestApplication): Promise<void> {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.use(express.json({ limit: '1mb' }));
   await app.init();
+}
+
+// Глобальный сброс базы перед всеми e2e
+beforeAll(async () => {
   await cleanDb();
-} 
+}); 

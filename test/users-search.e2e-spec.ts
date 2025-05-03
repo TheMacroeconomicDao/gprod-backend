@@ -9,6 +9,7 @@ import { cleanDb } from './clean-db';
 describe('Users search/sort (e2e)', () => {
   let app: INestApplication;
   let token: string;
+  let userId: string;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -16,14 +17,24 @@ describe('Users search/sort (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await setupE2EApp(app);
-
-    // Создаём пользователей
-    await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'alice', email: 'alice@mail.com', password: '123456' });
-    await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'bob', email: 'bob@mail.com', password: '123456' });
-    await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'vasya', email: 'vasya@mail.com', password: '123456' });
-    // Логинимся
-    const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'alice', password: '123456' });
-    token = res.body.access_token;
+    const reg1 = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'alice1', email: 'alice1@mail.com', password: '123456' });
+    expect(reg1.status).toBe(201);
+    const reg2 = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'bob1', email: 'bob1@mail.com', password: '123456' });
+    expect(reg2.status).toBe(201);
+    const reg3 = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'vasya1', email: 'vasya1@mail.com', password: '123456' });
+    expect(reg3.status).toBe(201);
+    const login = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'vasya1', password: '123456' });
+    expect(login.status).toBe(200);
+    expect(login.body.access_token).toBeDefined();
+    token = login.body.access_token;
+    const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${token}`);
+    expect(users.status).toBe(200);
+    const usersArr = users.body.data ?? users.body;
+    if (!Array.isArray(usersArr)) {
+      console.error('users.body:', users.body);
+      throw new Error('usersArr is not array');
+    }
+    userId = usersArr.find((u: any) => u.username === 'vasya1').id;
   });
 
   beforeEach(async () => {
@@ -31,14 +42,18 @@ describe('Users search/sort (e2e)', () => {
   });
 
   it('поиск по username', async () => {
-    const res = await request(app.getHttpServer()).get('/api/v1/users?search=vasya').set('Authorization', `Bearer ${token}`);
+    const res = await request(app.getHttpServer()).get('/api/v1/users?search=vasya1').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
     expect(res.body.data.length).toBe(1);
-    expect(res.body.data[0].username).toBe('vasya');
+    expect(res.body.data[0].username).toBe('vasya1');
   });
 
   it('сортировка по username:desc', async () => {
     const res = await request(app.getHttpServer()).get('/api/v1/users?sort=username:desc').set('Authorization', `Bearer ${token}`);
-    expect(res.body.data[0].username).toBe('vasya');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data[0].username).toBe('vasya1');
   });
 
   afterAll(async () => {
