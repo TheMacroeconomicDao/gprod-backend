@@ -19,7 +19,7 @@ describe('AuthService', () => {
       updatedAt: new Date(),
       roles: ['user'],
     };
-    const module: TestingModule = await Test.createTestingModule({
+    module = await Test.createTestingModule({
       imports: [JwtModule.register({ secret: 'test-secret' })],
       providers: [
         AuthService,

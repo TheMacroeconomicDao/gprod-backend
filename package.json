@@ -12,6 +12,9 @@
     "start:dev": "NODE_ENV=development npm run start",
     "start:stage": "NODE_ENV=staging node dist/src/main.js",
     "start:prod": "NODE_ENV=production node dist/src/main.js",
+
+    "docker:restart": "docker compose up --build --force-recreate -d",
+
     "lint": "eslint \"{src,apps,libs,test}/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -27,8 +30,13 @@
     "prisma:studio:dev": "export DATABASE_URL=$(grep ^DEV_DATABASE_URL .env | cut -d '=' -f2-) && npx prisma studio",
     "prisma:studio:stage": "export DATABASE_URL=$(grep ^STAGE_DATABASE_URL .env | cut -d '=' -f2-) && npx prisma studio",
     "prisma:studio:prod": "export DATABASE_URL=$(grep ^PROD_DATABASE_URL .env | cut -d '=' -f2-) && npx prisma studio",
+    
     "docker:prisma:migrate:dev": "docker-compose run --rm app npx prisma migrate dev",
-    "docker:prisma:generate": "docker-compose run --rm app npx prisma generate"
+    "docker:prisma:generate": "docker-compose run --rm app npx prisma generate",
+    
+    "docker:test": "docker compose run --rm app pnpm run test",
+    "docker:test:e2e": "docker compose run --rm app pnpm run test:e2e",
+    "docker:test:rebuild": "docker compose up --build --force-recreate -d && docker compose run --rm app pnpm run test"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

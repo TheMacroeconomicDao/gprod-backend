@@ -7,7 +7,7 @@ describe('UsersService', () => {
 
   beforeEach(() => {
     prisma = new PrismaClient();
-    service = new UsersService();
+    service = new UsersService(prisma as any);
     // @ts-ignore
     service.prisma = prisma;
     prisma.user.findFirst = jest.fn();

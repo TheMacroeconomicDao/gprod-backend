@@ -16,7 +16,7 @@ describe('ProjectsService', () => {
   let service: ProjectsService;
 
   beforeEach(() => {
-    service = new ProjectsService();
+    service = new ProjectsService(mockPrisma as any);
     // @ts-ignore
     service.prisma = mockPrisma;
     Object.values(mockPrisma.user).forEach(fn => fn.mockReset());
