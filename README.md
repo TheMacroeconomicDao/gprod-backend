@@ -700,3 +700,16 @@ AGPL-v3 (см. LICENSE)
 ---
 
 **GPROD by Gybernaty** — чистый, production-ready бэкенд. Вопросы/PR — welcome.
+
+## Документация
+
+Подробная документация проекта доступна в директории [docs/](docs/README.md):
+
+- [Архитектура](docs/architecture/README.md) - описание архитектуры приложения
+- [API](docs/api/README.md) - документация по API проекта
+- [Окружения](docs/environments/README.md) - управление переменными окружения
+- [Docker](docs/docker/README.md) - документация по Docker-конфигурациям
+- [Автоматизация](docs/automation/README.md) - документация по сценариям автоматизации
+- [Разработка](docs/development/README.md) - руководство по процессу разработки
+- [Тестирование](docs/testing/README.md) - стратегия и практики тестирования
+- [Безопасность](docs/security/README.md) - рекомендации по безопасности
