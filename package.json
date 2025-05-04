@@ -63,7 +63,7 @@
     "auto:docker:reference": "bash docker/docker-manager.sh reference up",
     
     "auto:test": "bash automation/run.sh test",
-    "auto:interactive": "bash automation/scripts/interactive-run.sh",
+    "auto:interactive": "bash ./automation/run.sh interactive",
     
     "lint": "eslint \"{src,apps,libs,test}/*.ts\" --fix",
     "test": "jest",

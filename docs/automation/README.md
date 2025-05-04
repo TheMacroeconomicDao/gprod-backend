@@ -35,7 +35,6 @@ automation/
 │   └─ setup-env-files.sh # Создание файлов окружения из шаблонов
 └─ scripts/              # Скрипты для тестирования и других задач
     ├─ docker-smart-test.sh # Запуск тестов в Docker
-    ├─ interactive-run.sh # Интерактивный запуск проекта
     ├─ run-env.sh        # Запуск приложения в разных режимах
     └─ run-tests.sh      # Запуск различных видов тестов
 ```
@@ -81,6 +80,9 @@ automation/
 ./automation/run.sh env dev    # Настройка development окружения
 ./automation/run.sh env stage  # Настройка staging окружения
 ./automation/run.sh env prod   # Настройка production окружения
+
+# Интерактивный режим
+./automation/run.sh interactive # Запуск в интерактивном режиме с выбором контура и опций
 ```
 
 ## Скрипты управления окружениями

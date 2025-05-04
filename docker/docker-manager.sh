@@ -6,7 +6,11 @@
 # Универсальный скрипт для управления Docker контейнерами
 #
 # Использование:
-#   ./docker-manager.sh <контур> <команда> [--build]
+#   ./docker-manager.sh <контур> <команда> [параметры]
+#
+# Параметры:
+#   --build                     - принудительная пересборка образов
+#   -f file1.yml -f file2.yml   - использовать указанные файлы docker-compose
 #
 # Контуры:
 #   dev, stage, prod, reference
@@ -148,8 +152,22 @@ case "$ACTION" in
         ;;
     esac
     
-    # Проверка наличия образа
-    if check_image_exists "$IMAGE_NAME" && [ "$BUILD" != true ]; then
+    # Проверка наличия дополнительных параметров
+    # Проверяем, есть ли параметр -f для использования кастомных файлов docker-compose
+    CUSTOM_FILES=false
+    for arg in "$@"; do
+      if [[ "$arg" == "-f" ]]; then
+        CUSTOM_FILES=true
+        break
+      fi
+    done
+    
+    # Если есть кастомные файлы, используем их
+    if [ "$CUSTOM_FILES" = true ]; then
+      print_step "Используем кастомные файлы docker-compose..."
+      cd $PROJECT_ROOT && docker compose $@ up -d
+    # Иначе проверяем наличие образа и флаг --build
+    elif check_image_exists "$IMAGE_NAME" && [ "$BUILD" != true ]; then
       print_step "Найден существующий образ $IMAGE_NAME. Используем его без пересборки..."
       cd $PROJECT_ROOT && docker compose -f "$COMPOSE_FILE" up -d
     else
