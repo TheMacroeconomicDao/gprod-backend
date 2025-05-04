@@ -4,7 +4,7 @@
 # 🌟 GPROD Advanced Environment Setup Script
 # ===================================================
 # Автоматическое создание и настройка .env файлов для всех окружений
-# Версия 2.0
+# Версия 2.1 - с поддержкой выбора стрелками
 
 # Цвета для красивого вывода
 RED='\033[0;31m'
@@ -51,6 +51,37 @@ print_info() {
 
 print_step() {
     echo -e "${ARROW} ${PURPLE}$1${NC}"
+}
+
+# Более простой выбор опций без сложной обработки клавиш
+simple_select() {
+    local title=$1
+    shift
+    local options=("$@")
+    local num_options=${#options[@]}
+    local choice
+    
+    echo -e "${CYAN}${title}${NC}"
+    
+    for ((i=1; i<=num_options; i++)); do
+        echo -e "${GREEN}$i)${NC} ${options[$i-1]}"
+    done
+    
+    while true; do
+        read -p "$(echo -e "${BLUE}Введите номер (1-$num_options): ${NC}")" choice
+        
+        if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le $num_options ]; then
+            return $((choice-1))
+        else
+            print_error "Пожалуйста, введите число от 1 до $num_options"
+        fi
+    done
+}
+
+# Переопределяем устаревшую функцию arrow_select
+arrow_select() {
+    simple_select "$@"
+    return $?
 }
 
 # Определение системы
@@ -198,36 +229,36 @@ JWT_EXPIRES=1h
 JWT_REFRESH_EXPIRES=30d
 
 # Логирование
-LOG_LEVEL=info
+LOG_LEVEL=warn
 DEBUG=false
 
 # CORS и безопасность
 CORS_ENABLED=true
 CORS_ORIGIN=https://gprod.com,https://admin.gprod.com
 RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
+RATE_LIMIT_MAX=50
 
 # Дополнительные настройки
 APP_NAME=GPROD API
 APP_VERSION=1.0.0
-HOST=localhost
+HOST=api.gprod.com
 DOMAIN=gprod.com
 
 # Postgres
 POSTGRES_HOST=db
 POSTGRES_PORT=5432
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=super_secure_postgres_password
+POSTGRES_PASSWORD=prod_secure_password
 POSTGRES_DB=gprod_prod
 
-# Redis для кэширования
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=super_secure_redis_password
+# SSL
+SSL_ENABLED=true
+SSL_KEY=/etc/ssl/private/gprod.key
+SSL_CERT=/etc/ssl/certs/gprod.crt
 
 # Prometheus и Grafana
 GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=super_secure_grafana_password
+GRAFANA_ADMIN_PASSWORD=secure_grafana_password
 
 # Инструментальные переменные
 LOGGER_TEST_MODE=false
@@ -235,39 +266,29 @@ RUNNING_IN_DOCKER=true
 EOL
 print_success "Шаблон .env.production создан"
 
-# Создаем шаблон для тестового окружения
+# Создаем шаблон для test
 print_step "Создание шаблона для test..."
 cat > .env-templates/.env.test << 'EOL'
-# Основные настройки окружения для тестов
+# Основные настройки окружения
 NODE_ENV=test
 PORT=3009
 
-# База данных для тестов
-# Примечание: Для локальных тестов используйте localhost:5432, для Docker - db:5432
-# EnvHelper автоматически выберет правильный URL в зависимости от окружения
+# База данных
 DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_test
 
-# Если используем докер напрямую - эти переменные будут переопределены через env
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=gprod_test
-
-# JWT и авторизация для тестов
+# JWT и авторизация
 JWT_SECRET=test_jwt_secret
-TEST_JWT_SECRET=test_secret_key_for_testing_only
-JWT_EXPIRES=1h
+JWT_EXPIRES=3600s
 JWT_REFRESH_EXPIRES=7d
 
-# Логирование (минимизируем в тестах)
+# Логирование
 LOG_LEVEL=error
 DEBUG=false
 
 # CORS и безопасность
 CORS_ENABLED=true
-CORS_ORIGIN=http://localhost:3000,http://localhost:5173,http://localhost:3009
-RATE_LIMIT_WINDOW_MS=60000
+CORS_ORIGIN=http://localhost:3000
+RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX=1000
 
 # Дополнительные настройки
@@ -276,26 +297,39 @@ APP_VERSION=1.0.0
 HOST=localhost
 DOMAIN=localhost
 
+# Postgres
+POSTGRES_HOST=db
+POSTGRES_PORT=5432
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres
+POSTGRES_DB=gprod_test
+
+# Настройки тестов
+JEST_TIMEOUT=10000
+DISABLE_AUTH=true
+DISABLE_RATE_LIMIT=true
+DISABLE_CACHE=true
+
 # Инструментальные переменные
 LOGGER_TEST_MODE=true
 RUNNING_IN_DOCKER=false
 EOL
 print_success "Шаблон .env.test создан"
 
-print_subheader "🎯 Применение шаблонов"
 print_info "Все шаблоны успешно созданы в директории .env-templates"
 
-# Интерактивная настройка
 print_subheader "⚙️ Настройка рабочего окружения"
 
 # Проверка наличия .env* файлов в корне
 if ls .env* 1> /dev/null 2>&1; then
     print_warning "В проекте уже есть .env файлы:"
-    ls -la .env*
+    ls -la .env* | grep -v "\.env-templates"
     
-    read -p "$(echo -e $YELLOW"Хотите перезаписать существующие .env файлы? (y/n): "$NC)" overwrite
+    options=("Да" "Нет")
+    simple_select "Хотите перезаписать существующие .env файлы?" "${options[@]}"
+    overwrite=$?
     
-    if [[ "$overwrite" != "y" && "$overwrite" != "Y" ]]; then
+    if [ $overwrite -ne 0 ]; then
         print_info "Cохраняем существующие .env файлы."
         
         # Проверим симлинк .env
@@ -313,37 +347,40 @@ if ls .env* 1> /dev/null 2>&1; then
 fi
 
 # Определяем, какой контур установить по умолчанию
-print_info "Выберите контур для использования по умолчанию:"
-select env_type in "development" "staging" "production" "test"; do
-    case $env_type in
-        development)
-            DEFAULT_ENV="development"
-            ENV_FILE=".env.development"
-            break
-            ;;
-        staging)
-            DEFAULT_ENV="staging"
-            ENV_FILE=".env.staging"
-            break
-            ;;
-        production)
-            DEFAULT_ENV="production"
-            ENV_FILE=".env.production"
-            break
-            ;;
-        test)
-            DEFAULT_ENV="test"
-            ENV_FILE=".env.test"
-            break
-            ;;
-        *)
-            print_error "Некорректный выбор"
-            ;;
-    esac
-done
+options=("development" "staging" "production" "test" "все контуры")
+simple_select "Выберите контур для создания:" "${options[@]}"
+env_type=$?
 
-# Копируем шаблоны для всех контуров
-for env in development staging production test; do
+case $env_type in
+    0)
+        DEFAULT_ENV="development"
+        ENV_FILE=".env.development"
+        ENV_FILES=("development")
+        ;;
+    1)
+        DEFAULT_ENV="staging"
+        ENV_FILE=".env.staging"
+        ENV_FILES=("staging")
+        ;;
+    2)
+        DEFAULT_ENV="production"
+        ENV_FILE=".env.production"
+        ENV_FILES=("production")
+        ;;
+    3)
+        DEFAULT_ENV="test"
+        ENV_FILE=".env.test"
+        ENV_FILES=("test")
+        ;;
+    4)
+        DEFAULT_ENV="development"
+        ENV_FILE=".env.development"
+        ENV_FILES=("development" "staging" "production" "test")
+        ;;
+esac
+
+# Копируем шаблоны для выбранных контуров
+for env in "${ENV_FILES[@]}"; do
     src=".env-templates/.env.${env}"
     dest=".env.${env}"
     
@@ -361,22 +398,15 @@ print_success "Файл .env установлен как симлинк на $EN
 
 # Определяем режим запуска
 if [ "$DOCKER_AVAILABLE" = true ]; then
-    print_info "Выберите режим запуска по умолчанию:"
-    select run_mode in "Docker" "Локально"; do
-        case $run_mode in
-            Docker)
-                USE_DOCKER=true
-                break
-                ;;
-            Локально)
-                USE_DOCKER=false
-                break
-                ;;
-            *)
-                print_error "Некорректный выбор"
-                ;;
-        esac
-    done
+    options=("Docker" "Локально")
+    arrow_select "Выберите режим запуска по умолчанию:" "${options[@]}"
+    run_mode=$?
+    
+    if [ $run_mode -eq 0 ]; then
+        USE_DOCKER=true
+    else
+        USE_DOCKER=false
+    fi
 else
     USE_DOCKER=false
 fi
@@ -405,46 +435,45 @@ done
 
 # Создание пользовательской базовой конфигурации
 print_subheader "🔧 Создание пользовательской конфигурации"
-print_info "Хотите настроить дополнительные параметры для $ENV_FILE?"
-select customize in "Да" "Нет"; do
-    case $customize in
-        Да)
-            # Порт
-            read -p "$(echo -e $BLUE"Порт для API (оставьте пустым для значения по умолчанию): "$NC)" custom_port
-            if [ ! -z "$custom_port" ]; then
-                "${SED_INPLACE[@]}" "s/PORT=[0-9]*/PORT=$custom_port/" "$ENV_FILE"
-                print_success "Порт установлен: $custom_port"
-            fi
-            
-            # JWT Secret
-            read -p "$(echo -e $BLUE"JWT Secret (оставьте пустым для значения по умолчанию): "$NC)" custom_jwt
-            if [ ! -z "$custom_jwt" ]; then
-                "${SED_INPLACE[@]}" "s/JWT_SECRET=.*/JWT_SECRET=$custom_jwt/" "$ENV_FILE"
-                print_success "JWT Secret обновлен"
-            fi
-            
-            # Режим отладки
-            read -p "$(echo -e $BLUE"Включить режим отладки? (y/n): "$NC)" debug_mode
-            if [[ "$debug_mode" == "y" || "$debug_mode" == "Y" ]]; then
-                "${SED_INPLACE[@]}" "s/DEBUG=false/DEBUG=true/" "$ENV_FILE"
-                print_success "Режим отладки включен"
-            fi
-            
-            # MacOS fix for sed
-            if [ "$OS_TYPE" = "MacOS" ]; then
-                rm -f "${ENV_FILE}.bak" 2>/dev/null
-            fi
-            break
-            ;;
-        Нет)
-            print_info "Используем значения по умолчанию"
-            break
-            ;;
-        *)
-            print_error "Некорректный выбор"
-            ;;
-    esac
-done
+options=("Да" "Нет")
+arrow_select "Хотите настроить дополнительные параметры для $ENV_FILE?" "${options[@]}"
+customize=$?
+
+if [ $customize -eq 0 ]; then
+    # Порт
+    read -p "$(echo -e $BLUE"Порт для API (оставьте пустым для значения по умолчанию): "$NC)" custom_port
+    if [ ! -z "$custom_port" ]; then
+        "${SED_INPLACE[@]}" "s/PORT=[0-9]*/PORT=$custom_port/" "$ENV_FILE"
+        print_success "Порт установлен: $custom_port"
+    fi
+    
+    # JWT Secret
+    read -p "$(echo -e $BLUE"JWT Secret (оставьте пустым для значения по умолчанию): "$NC)" custom_jwt
+    if [ ! -z "$custom_jwt" ]; then
+        "${SED_INPLACE[@]}" "s/JWT_SECRET=.*/JWT_SECRET=$custom_jwt/" "$ENV_FILE"
+        print_success "JWT Secret обновлен"
+    fi
+    
+    # Режим отладки
+    options=("Да" "Нет")
+    arrow_select "Включить режим отладки?" "${options[@]}"
+    debug_mode=$?
+    
+    if [ $debug_mode -eq 0 ]; then
+        "${SED_INPLACE[@]}" "s/DEBUG=false/DEBUG=true/" "$ENV_FILE"
+        print_success "Режим отладки включен"
+    else
+        "${SED_INPLACE[@]}" "s/DEBUG=true/DEBUG=false/" "$ENV_FILE"
+        print_success "Режим отладки выключен"
+    fi
+    
+    # MacOS fix for sed
+    if [ "$OS_TYPE" = "MacOS" ]; then
+        rm -f "${ENV_FILE}.bak" 2>/dev/null
+    fi
+else
+    print_info "Используем значения по умолчанию"
+fi
 
 print_header "✅ Настройка окружения завершена успешно!"
 print_info "Текущий контур: ${BOLD}$DEFAULT_ENV${NC}"
@@ -458,15 +487,22 @@ print_step "Переключить контур: ${BOLD}pnpm run env:switch:new 
 
 # Предложение сразу запустить приложение
 print_subheader "🏃 Быстрый запуск"
-read -p "$(echo -e $YELLOW"Хотите запустить приложение сейчас? (y/n): "$NC)" should_run
+options=("Да" "Нет")
+arrow_select "Хотите запустить приложение сейчас?" "${options[@]}"
+should_run=$?
 
-if [[ "$should_run" == "y" || "$should_run" == "Y" ]]; then
+if [ $should_run -eq 0 ]; then
     if [ "$USE_DOCKER" = true ]; then
         print_info "Запускаем с Docker..."
         if [ -f "docker-compose.reference.yml" ]; then
             docker compose -f docker-compose.reference.yml up -d
         else
-            print_error "Файл docker-compose.reference.yml не найден"
+            print_info "Проверяем наличие файла в директории docker/"
+            if [ -f "docker/docker-compose.reference.yml" ]; then
+                docker compose -f docker/docker-compose.reference.yml up -d
+            else
+                print_error "Файл docker-compose.reference.yml не найден"
+            fi
         fi
     else
         print_info "Запускаем локально..."

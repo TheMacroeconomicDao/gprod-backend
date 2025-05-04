@@ -84,30 +84,30 @@ docker-compose -f docker/docker-compose.yml -f docker/prod/docker-compose.prod.y
 
 ### Запуск приложения
 
-```sh
-# Запуск минимальной конфигурации (рекомендуется для разработки)
-pnpm run docker:reference          # запуск
-pnpm run docker:reference:down     # остановка
-pnpm run docker:reference:restart  # перезапуск
-pnpm run docker:reference:logs     # просмотр логов
-pnpm run docker:reference:build    # пересборка
-
+  ```sh
+  # Запуск минимальной конфигурации (рекомендуется для разработки)
+  pnpm run docker:reference          # запуск
+  pnpm run docker:reference:down     # остановка
+  pnpm run docker:reference:restart  # перезапуск
+  pnpm run docker:reference:logs     # просмотр логов
+  pnpm run docker:reference:build    # пересборка
+  
 # Запуск в Docker с автоматическими миграциями
 pnpm run docker:restart
-```
+  ```
 
 ### Тестирование
 
-```sh
-# Все тесты с пересборкой
-pnpm run docker:test:rebuild
-
-# Только e2e тесты
-pnpm run docker:test:e2e
-
-# Только unit тесты
-pnpm run docker:test
-```
+  ```sh
+  # Все тесты с пересборкой
+  pnpm run docker:test:rebuild
+  
+  # Только e2e тесты
+  pnpm run docker:test:e2e
+  
+  # Только unit тесты
+  pnpm run docker:test
+  ```
 
 ### Управление окружениями
 
@@ -205,4 +205,4 @@ AGPL-v3 (см. LICENSE)
 
 ---
 
-**GPROD by Gybernaty** — чистый, production-ready бэкенд. Вопросы/PR — welcome. 
+**GPROD by Gybernaty** — чистый, production-ready бэкенд. Вопросы/PR — welcome.
