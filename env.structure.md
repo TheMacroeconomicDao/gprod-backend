@@ -261,4 +261,59 @@ services:
     # или
     env_file:
       - .env.production
+```
+
+## Модульная архитектура для работы с окружением
+
+### Новая структура файлов
+
+В новой версии приложения работа с переменными окружения реализована через отдельный модуль:
+
+```
+src/common/environment/
+├── environment.module.ts     # Модуль для внедрения зависимостей
+├── environment.service.ts    # Сервис для работы с переменными окружения
+└── index.ts                  # Экспорт всех компонентов модуля
+```
+
+### EnvironmentService
+
+`EnvironmentService` предоставляет объектно-ориентированный подход к работе с переменными окружения:
+
+```typescript
+// Пример получения переменных окружения через EnvironmentService
+@Injectable()
+export class AppService {
+  constructor(private readonly environment: EnvironmentService) {}
+
+  getPort(): number {
+    return this.environment.getPort();
+  }
+
+  getDatabaseUrl(): string {
+    return this.environment.getString('DATABASE_URL');
+  }
+}
+```
+
+### Преимущества новой структуры
+
+1. **Dependency Injection** - EnvironmentService внедряется через конструктор
+2. **Тестируемость** - можно легко мокать сервис для тестов
+3. **Типизация** - строгая типизация для всех методов
+4. **Единая точка доступа** - все переменные получаются из одного сервиса
+5. **Автоматическая загрузка** - .env файлы загружаются автоматически при создании сервиса
+
+### Поддерживаемые методы
+
+- `getString(key, defaultValue?)` - получение строкового значения
+- `getStringOrThrow(key)` - получение строкового значения с выбросом ошибки, если не найдено
+- `getNumber(key, defaultValue?)` - получение числового значения
+- `getBoolean(key, defaultValue?)` - получение логического значения
+- `getArray(key, defaultValue?)` - получение массива строк
+- `getPort()` - получение порта приложения
+- `environment` - текущее окружение (`development`, `staging`, `production`, `test`)
+- `isDevelopment`, `isStaging`, `isProduction`, `isTest` - проверка текущего окружения
+- `isDocker` - проверка, запущено ли приложение в Docker
 ``` 
+</rewritten_file>

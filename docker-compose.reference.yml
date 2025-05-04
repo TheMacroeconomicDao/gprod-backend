@@ -26,13 +26,20 @@ services:
       dockerfile: Dockerfile
     command: pnpm start:dev
     ports:
-      - "3000:3000"
+      - "${PORT:-3008}:${PORT:-3008}"
     volumes:
       - .:/app
       - /app/node_modules
+    env_file:
+      - .env.${NODE_ENV:-development}
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=${NODE_ENV:-development}
+      - PORT=${PORT:-3008}
+      - LOGGER_TEST_MODE=${LOGGER_TEST_MODE:-false}
       - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/gprod_dev
+      - JWT_SECRET=${JWT_SECRET:-dev_jwt_secret_change_me_in_production}
+      - DEBUG=${DEBUG:-false}
+      - RUNNING_IN_DOCKER=true
     depends_on:
       db:
         condition: service_healthy

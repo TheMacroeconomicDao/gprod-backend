@@ -133,42 +133,41 @@ docker-compose -f docker/docker-compose.yml -f docker/prod/docker-compose.prod.y
 
 ### Модульная структура проекта
 
-Система организована в модульную структуру для легкого масштабирования и разделения ответственностей:
+Проект имеет модульную структуру, разделенную на следующие компоненты:
 
-```
-src/
-├── app.module.ts               # Корневой модуль приложения
-├── main.ts                     # Точка входа (bootstrap)
-├── modules/                    # Функциональные модули
-│   ├── auth/                   # Аутентификация и авторизация
-│   │   ├── auth.module.ts
-│   │   ├── auth.service.ts
-│   │   ├── auth.controller.ts
-│   │   ├── strategies/         # JWT и Local стратегии
-│   │   └── guards/             # Guard'ы для защиты роутов
-│   ├── users/                  # Управление пользователями
-│   │   ├── users.module.ts
-│   │   ├── users.service.ts
-│   │   ├── users.controller.ts
-│   │   └── dto/                # Data Transfer Objects
-│   ├── projects/               # Управление проектами
-│   │   ├── projects.module.ts
-│   │   ├── projects.service.ts
-│   │   ├── projects.controller.ts
-│   │   └── dto/                # Data Transfer Objects
-│   └── health/                 # Проверка здоровья системы
-│       ├── health.module.ts
-│       └── health.controller.ts
-└── common/                     # Общие компоненты
-    ├── config/                 # Конфигурация приложения
-    ├── prisma.module.ts        # Модуль для работы с базой данных
-    ├── guards/                 # Глобальные Guard'ы
-    ├── filters/                # Обработчики ошибок
-    ├── decorators/             # Кастомные декораторы
-    ├── dto/                    # Общие DTO
-    ├── helpers/                # Вспомогательные функции
-    └── logger/                 # Настройка логирования
-```
+### Основные модули
+
+- **Environment Module** (`/src/common/environment`) - управление переменными окружения и конфигурацией
+- **Database Module** (`/src/common/database`) - работа с базой данных через Prisma
+- **Security Module** (`/src/common/security`) - централизованное управление безопасностью, JWT, guards
+- **Upload Module** (`/src/common/upload`) - работа с загрузкой и управлением файлами
+
+### Бизнес-модули
+
+- **Users Module** (`/src/modules/users`) - управление пользователями
+- **Auth Module** (`/src/modules/auth`) - аутентификация и авторизация
+- **Projects Module** (`/src/modules/projects`) - управление проектами
+- **Health Module** (`/src/modules/health`) - проверка здоровья системы
+
+### Общие компоненты
+
+- **Logger Module** - продвинутое логирование на базе Winston
+- **Config Module** - управление конфигурацией приложения
+
+### Дополнительные файлы
+
+- **main.ts** - точка входа в приложение
+- **app.module.ts** - корневой модуль приложения
+
+## Принципы работы
+
+Приложение следует следующим принципам:
+
+1. **Модульность** - каждый модуль отвечает за свою часть функциональности
+2. **Dependency Injection** - все зависимости внедряются через конструкторы
+3. **Single Responsibility** - каждый класс имеет одну ответственность
+4. **Инкапсуляция** - внутренняя логика скрыта за публичными интерфейсами
+5. **Testability** - архитектура оптимизирована для удобного тестирования
 
 ### Ключевые компоненты:
 
