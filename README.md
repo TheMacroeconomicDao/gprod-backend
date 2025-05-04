@@ -18,12 +18,34 @@
   ```sh
   # Установка шаблонов .env файлов для всех контуров
   pnpm run env:setup
-  
-  # Переключение между контурами (dev, stage, prod) с автоматическим запуском 
-  pnpm run env:switch:new dev   # разработка (порт 3000)
-  pnpm run env:switch:new stage # тестирование (порт 3003)
-  pnpm run env:switch:new prod  # продакшен (порт 3007)
+
+  # Выбор контура для локальной разработки
+  pnpm run env:switch dev
   ```
+
+- **Запуск базового окружения для разработки:**
+  ```sh
+  # Запуск минимального docker-compose для разработки
+  docker-compose -f docker-compose.reference.yml up -d
+  ```
+
+## Инфраструктура
+
+Инфраструктурные конфигурации (Docker, Nginx, мониторинг) вынесены в отдельный репозиторий: [gybernaty-infra](https://github.com/yourusername/gybernaty-infra)
+
+Для полного развертывания:
+
+1. Клонируйте инфраструктурный репозиторий
+   ```sh
+   git clone https://github.com/yourusername/gybernaty-infra.git
+   ```
+
+2. Используйте соответствующие docker-compose файлы для вашего окружения
+   ```sh
+   # Для продакшена
+   cd gybernaty-infra
+   docker-compose -f docker/docker-compose.yml -f docker/prod/docker-compose.prod.yml up -d
+   ```
 
 - **Запуск в Docker (с автоматическими миграциями):**
   ```sh
