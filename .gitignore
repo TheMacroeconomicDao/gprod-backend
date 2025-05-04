@@ -34,6 +34,8 @@ dist/
 
 # IDE/editor
 .vscode/
+.vscode/*
+!.vscode/extensions.json
 .idea/
 .DS_Store
 
@@ -44,6 +46,8 @@ dist/
 prisma/dev.db
 prisma/test.db
 prisma/.env
+generated/
+generated/*
 
 # Docker
 *.local
@@ -64,6 +68,7 @@ prisma/.env
 
 # Custom
 .cursor/
+.cursor/*
 
 # Seed artifacts (если есть)
 prisma/seed.ts
