@@ -647,7 +647,7 @@ pnpm run docker:test:e2e      # e2e тесты в Docker
 ---
 
 ## Лицензия
-MIT (см. LICENSE)
+AGPL-v3 (см. LICENSE)
 
 ---
 
