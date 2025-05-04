@@ -70,6 +70,15 @@ fi
 COMMAND=$1
 ENV=${2:-dev}  # По умолчанию используем dev
 
+# Проверка наличия флага --rebuild
+REBUILD=false
+for arg in "$@"; do
+  if [ "$arg" = "--rebuild" ]; then
+    REBUILD=true
+    break
+  fi
+done
+
 # Выполнение команды
 case $COMMAND in
   env)
@@ -82,7 +91,14 @@ case $COMMAND in
     bash "$ENV_MANAGER" "$ENV" --silent --docker
     
     print_step "Запуск Docker контейнеров..."
-    bash "$DOCKER_MANAGER" "$ENV" up
+    
+    # Проверка флага --rebuild
+    if [ "$REBUILD" = true ]; then
+      print_info "Режим принудительной пересборки активирован"
+      bash "$DOCKER_MANAGER" "$ENV" up --build
+    else
+      bash "$DOCKER_MANAGER" "$ENV" up
+    fi
     ;;
   stop)
     print_header "🛑 Остановка окружения: $ENV"

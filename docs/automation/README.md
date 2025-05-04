@@ -25,17 +25,18 @@
 
 ```
 automation/
-├── run.sh                # Основной скрипт для всех автоматизаций
-├── docker/               # Скрипты для работы с Docker
-│   └── docker-manager.sh # Управление Docker-контейнерами
-├── env/                  # Скрипты для работы с окружениями
-│   ├── env-manager.sh    # Управление контурами окружения
-│   ├── env-switch-new.sh # Расширенное управление окружениями
-│   └── setup-env-files.sh # Создание файлов окружения из шаблонов
-└── scripts/              # Скрипты для тестирования и других задач
-    ├── docker-smart-test.sh # Запуск тестов в Docker
-    ├── run-env.sh        # Запуск приложения в разных режимах
-    └── run-tests.sh      # Запуск различных видов тестов
+├─ run.sh                # Основной скрипт для всех автоматизаций
+├─ docker/               # Скрипты для работы с Docker
+│   └─ docker-manager.sh # Управление Docker-контейнерами
+├─ env/                  # Скрипты для работы с окружениями
+│   ├─ env-manager.sh    # Управление контурами окружения
+│   ├─ env-switch-new.sh # Расширенное управление окружениями
+│   └─ setup-env-files.sh # Создание файлов окружения из шаблонов
+└─ scripts/              # Скрипты для тестирования и других задач
+    ├─ docker-smart-test.sh # Запуск тестов в Docker
+    ├─ interactive-run.sh # Интерактивный запуск проекта
+    ├─ run-env.sh        # Запуск приложения в разных режимах
+    └─ run-tests.sh      # Запуск различных видов тестов
 ```
 
 ## Центральный скрипт run.sh
@@ -54,6 +55,11 @@ automation/
 ./automation/run.sh run dev    # Запуск development контура
 ./automation/run.sh run stage  # Запуск staging контура
 ./automation/run.sh run prod   # Запуск production контура
+
+# Запуск с принудительной пересборкой образов
+./automation/run.sh run dev --rebuild    # Запуск dev с пересборкой
+./automation/run.sh run stage --rebuild  # Запуск stage с пересборкой
+./automation/run.sh run prod --rebuild   # Запуск prod с пересборкой
 
 # Остановка контуров
 ./automation/run.sh stop dev   # Остановка development контура

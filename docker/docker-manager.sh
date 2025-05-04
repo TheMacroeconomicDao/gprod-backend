@@ -56,6 +56,16 @@ print_step() {
   echo -e "${PURPLE}→ $1${NC}"
 }
 
+# Функция для проверки существования образа
+check_image_exists() {
+  local image_name=$1
+  if docker image inspect $image_name >/dev/null 2>&1; then
+    return 0  # Образ существует
+  else
+    return 1  # Образ не существует
+  fi
+}
+
 # Получение директорий
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../" && pwd)"
@@ -119,12 +129,36 @@ case "$ACTION" in
   up)
     print_header "🚀 Запуск контура $ENV_NAME"
     
-    if [ "$BUILD" = true ]; then
-      print_step "Запускаем с пересборкой..."
-      cd $PROJECT_ROOT && docker compose -f "$COMPOSE_FILE" up -d --build
-    else
-      print_step "Запускаем без пересборки..."
+    # Определение имени образа приложения в зависимости от контура
+    case $ENV_NAME in
+      development)
+        IMAGE_NAME="gprod-new-backend-app"
+        ;;
+      staging)
+        IMAGE_NAME="gprod-new-backend-app-stage"
+        ;;
+      production)
+        IMAGE_NAME="gprod-new-backend-app-prod"
+        ;;
+      "reference (minimal)")
+        IMAGE_NAME="gprod-new-backend-app"
+        ;;
+      *)
+        IMAGE_NAME="gprod-new-backend-app"
+        ;;
+    esac
+    
+    # Проверка наличия образа
+    if check_image_exists "$IMAGE_NAME" && [ "$BUILD" != true ]; then
+      print_step "Найден существующий образ $IMAGE_NAME. Используем его без пересборки..."
       cd $PROJECT_ROOT && docker compose -f "$COMPOSE_FILE" up -d
+    else
+      if [ "$BUILD" = true ]; then
+        print_step "Запускаем с принудительной пересборкой..."
+      else
+        print_step "Образ не найден. Запускаем с пересборкой..."
+      fi
+      cd $PROJECT_ROOT && docker compose -f "$COMPOSE_FILE" up -d --build
     fi
     
     # Проверка статуса

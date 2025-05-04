@@ -23,10 +23,16 @@
   pnpm run env:switch dev
   ```
 
-- **Запуск базового окружения для разработки:**
+- **Запуск окружения для разработки:**
   ```sh
-  # Запуск минимального docker-compose для разработки
+  # Интерактивный запуск (рекомендуется)
+  pnpm run auto:interactive
+  
+  # Или запуск минимального docker-compose для разработки
   pnpm run docker:reference
+  
+  # Запуск с принудительной пересборкой образов
+  pnpm run auto:run:dev:rebuild
   ```
 
 ## Инфраструктура
@@ -85,15 +91,28 @@ docker-compose -f docker/docker-compose.yml -f docker/prod/docker-compose.prod.y
 ### Запуск приложения
 
   ```sh
-  # Запуск минимальной конфигурации (рекомендуется для разработки)
+  # Интерактивный запуск (рекомендуется)
+  pnpm run auto:interactive         # интерактивный выбор контура и режима
+  
+  # Запуск через систему автоматизации
+  pnpm run auto:run:dev             # запуск dev контура
+  pnpm run auto:run:stage           # запуск stage контура
+  pnpm run auto:run:prod            # запуск prod контура
+  
+  # Запуск с принудительной пересборкой образов
+  pnpm run auto:run:dev:rebuild     # запуск dev с пересборкой
+  pnpm run auto:run:stage:rebuild   # запуск stage с пересборкой
+  pnpm run auto:run:prod:rebuild    # запуск prod с пересборкой
+  
+  # Запуск минимальной конфигурации (для быстрой разработки)
   pnpm run docker:reference          # запуск
   pnpm run docker:reference:down     # остановка
   pnpm run docker:reference:restart  # перезапуск
   pnpm run docker:reference:logs     # просмотр логов
   pnpm run docker:reference:build    # пересборка
   
-# Запуск в Docker с автоматическими миграциями
-pnpm run docker:restart
+  # Запуск в Docker с автоматическими миграциями
+  pnpm run docker:restart
   ```
 
 ### Тестирование

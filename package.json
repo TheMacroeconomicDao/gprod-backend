@@ -45,6 +45,9 @@
     "auto:run:dev": "bash automation/run.sh run dev",
     "auto:run:stage": "bash automation/run.sh run stage",
     "auto:run:prod": "bash automation/run.sh run prod",
+    "auto:run:dev:rebuild": "bash automation/run.sh run dev --rebuild",
+    "auto:run:stage:rebuild": "bash automation/run.sh run stage --rebuild",
+    "auto:run:prod:rebuild": "bash automation/run.sh run prod --rebuild",
     
     "auto:stop:dev": "bash automation/run.sh stop dev",
     "auto:stop:stage": "bash automation/run.sh stop stage",
@@ -60,6 +63,7 @@
     "auto:docker:reference": "bash docker/docker-manager.sh reference up",
     
     "auto:test": "bash automation/run.sh test",
+    "auto:interactive": "bash automation/scripts/interactive-run.sh",
     
     "lint": "eslint \"{src,apps,libs,test}/*.ts\" --fix",
     "test": "jest",
