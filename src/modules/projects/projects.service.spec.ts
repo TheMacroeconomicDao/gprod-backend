@@ -63,7 +63,8 @@ describe('ProjectsService', () => {
   });
 
   it('remove calls prisma.project.delete', async () => {
+    mockPrisma.project.findUnique.mockResolvedValue({ id: 1 });
     mockPrisma.project.delete.mockResolvedValue(undefined);
-    await expect(service.remove(1)).resolves.toBeUndefined();
+    await expect(service.remove(1)).resolves.toEqual({ success: true });
   });
 }); 

@@ -70,3 +70,4 @@ prisma/seed.ts
 
 # Ignore test snapshots (если появятся)
 __snapshots__/
+logs/*.log

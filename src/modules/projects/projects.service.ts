@@ -8,6 +8,7 @@ export class ProjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createProjectDto: CreateProjectDto) {
+    console.log('[ProjectsService.create] dto:', createProjectDto);
     const owner = await this.prisma.user.findUnique({ where: { id: createProjectDto.ownerId } });
     if (!owner) throw new NotFoundException('Owner not found');
     return this.prisma.project.create({
@@ -21,6 +22,7 @@ export class ProjectsService {
   }
 
   async findAll(page = 1, limit = 20, search?: string, sort?: string) {
+    console.log('[ProjectsService.findAll] page:', page, 'limit:', limit, 'search:', search, 'sort:', sort);
     const where: any = {};
     if (search) {
       where.OR = [
@@ -35,6 +37,7 @@ export class ProjectsService {
         orderBy = { [field]: dir };
       }
     }
+    console.log('[ProjectsService.findAll] orderBy:', JSON.stringify(orderBy));
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         skip: (page - 1) * limit,
@@ -45,16 +48,19 @@ export class ProjectsService {
       }),
       this.prisma.project.count({ where }),
     ]);
+    console.log('[ProjectsService.findAll] found:', data.length, 'total:', total);
     return { data, total };
   }
 
   async findOne(id: number) {
+    console.log('[ProjectsService.findOne] id:', id);
     const project = await this.prisma.project.findUnique({ where: { id }, include: { owner: true } });
     if (!project) throw new NotFoundException('Project not found');
     return project;
   }
 
   async update(id: number, updateProjectDto: UpdateProjectDto) {
+    console.log('[ProjectsService.update] id:', id, 'dto:', updateProjectDto);
     await this.findOne(id);
     const data: any = { ...updateProjectDto };
     if (updateProjectDto.ownerId) {
@@ -66,6 +72,17 @@ export class ProjectsService {
   }
 
   async remove(id: number) {
-    await this.prisma.project.delete({ where: { id } });
+    console.log('[ProjectsService.remove] id:', id);
+    try {
+      // Сначала проверяем существование проекта
+      await this.findOne(id);
+      // Удаляем проект
+      await this.prisma.project.delete({ where: { id } });
+      console.log('[ProjectsService.remove] project deleted successfully, id:', id);
+      return { success: true };
+    } catch (err) {
+      console.error('[ProjectsService.remove] error:', err);
+      throw err;
+    }
   }
 }

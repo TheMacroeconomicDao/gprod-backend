@@ -8,15 +8,24 @@ import { WinstonLogger } from './common/logger/winston.logger';
 import * as express from 'express';
 import helmet from 'helmet';
 
+// Исправленная функция проверки схемы
 async function checkSchema() {
+  const logger = new WinstonLogger('Database');
+  
+  // Пропускаем проверку, если мы в режиме тестирования логгера
+  if (EnvHelper.get('LOGGER_TEST_MODE', 'false') === 'true') {
+    logger.log('Пропускаем проверку схемы базы данных (режим тестирования логгера)');
+    return true;
+  }
+  
+  // Обычная проверка схемы для рабочего режима
   const { PrismaClient } = await import('@prisma/client');
   const prisma = new PrismaClient();
   try {
     await prisma.$queryRawUnsafe('SELECT roles FROM "User" LIMIT 1');
   } catch (e) {
     // Логируем и падаем, если нет поля
-    // eslint-disable-next-line no-console
-    console.error('FATAL: "roles" column missing in "User" table. Run migrations!');
+    logger.error('FATAL: "roles" column missing in "User" table. Run migrations!', e.stack);
     process.exit(1);
   } finally {
     await prisma.$disconnect();
@@ -26,12 +35,19 @@ async function checkSchema() {
 // Bootstrap function for starting the NestJS application
 async function bootstrap() {
   // WinstonLogger for structured logging (info, error, etc.)
-  const logger = new WinstonLogger();
+  const logger = new WinstonLogger('Bootstrap');
   try {
     // Проверяем схему до старта приложения
     await checkSchema();
+    
+    logger.log('Starting application...');
+    
     // Создаём приложение с кастомным логгером
-    const app = await NestFactory.create(AppModule, { logger });
+    const app = await NestFactory.create(AppModule, { 
+      logger: logger,
+      // Отключаем логирование NestJS-ом для входящих запросов, т.к. имеем свой middleware для этого
+      bufferLogs: true
+    });
 
     // Включаем helmet с явной настройкой Content Security Policy (CSP)
     // Это защищает от XSS и других атак, явно указывая разрешённые источники
@@ -97,7 +113,9 @@ async function bootstrap() {
     SwaggerModule.setup('api/v2/docs', app, v2Document);
 
     // Запуск приложения на порту из ENV (по умолчанию 3007)
-    await app.listen(EnvHelper.int('PORT', 3007));
+    const port = EnvHelper.int('PORT', 3007);
+    await app.listen(port);
+    logger.log(`Application started successfully on port ${port}`);
   } catch (err) {
     // Логируем фатальные ошибки старта через WinstonLogger
     logger.error('Fatal error during bootstrap', err.stack || err);

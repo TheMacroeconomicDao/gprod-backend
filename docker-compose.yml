@@ -10,23 +10,41 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - gp-network
   app:
     build: .
     command: sh /app/docker-entrypoint.sh
     ports:
-      - "3007:3007"
+      - "3000:3000"
     env_file:
       - .env
     depends_on:
       - db
-  test:
-    build: .
-    command: pnpm run test:e2e:ci
-    environment:
-      - BASE_URL=http://app:3007
+    networks:
+      - gp-network
+  # Сервис для e2e-тестов
+  e2e:
+    container_name: e2e
+    build:
+      context: .
+      dockerfile: Dockerfile
     depends_on:
-      - app
+      - db
     env_file:
       - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod
+      - NODE_ENV=test
+    networks:
+      - gp-network
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npx jest --config ./test/jest-e2e.json --runInBand
 volumes:
   pgdata: 
+
+networks:
+  gp-network:
+    driver: bridge 

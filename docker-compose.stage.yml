@@ -1,28 +1,93 @@
 version: '3.8'
+
 services:
-  backend:
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gprod_stage
+    volumes:
+      - pgdata_stage:/var/lib/postgresql/data
+    networks:
+      - gp-network-stage
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5433:5432" # Другой порт для избежания конфликтов с dev
+
+  app:
     build:
       context: .
       dockerfile: Dockerfile
-    command: npm run start:prod
+      args:
+        - NODE_ENV=staging
+    command: sh /app/docker-entrypoint.sh
+    ports:
+      - "3003:3003" # Обновлено: порт внутри контейнера 3003
+    env_file:
+      - .env
     environment:
       - NODE_ENV=staging
-      - STAGE_DATABASE_URL=postgresql://postgres:postgres@db:5432/stagedb
-      - STAGE_JWT_SECRET=stagesecret
-    ports:
-      - '3000:3000'
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_stage
     depends_on:
-      - db
-    restart: unless-stopped
-  db:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: stagedb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - '5432:5432'
+      db:
+        condition: service_healthy
+    networks:
+      - gp-network-stage
+    restart: always
+    # Ограничения ресурсов для staging
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+
+  # Prometheus для мониторинга
+  prometheus:
+    image: prom/prometheus
     volumes:
-      - pgdata-stage:/var/lib/postgresql/data
+      - ./monitoring/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - gp-network-stage
+    restart: always
+
+  # Grafana для визуализации мониторинга
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3100:3000"
+    networks:
+      - gp-network-stage
+    depends_on:
+      - prometheus
+    restart: always
+
 volumes:
-  pgdata-stage: 
+  pgdata_stage:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  gp-network-stage:
+    driver: bridge 

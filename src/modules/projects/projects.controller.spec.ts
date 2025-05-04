@@ -32,9 +32,9 @@ describe('ProjectsController', () => {
   });
 
   it('create calls service.create', async () => {
-    const dto = { name: 'proj', description: 'desc' };
+    const dto = { title: 'proj', description: 'desc', ownerId: 42 };
     (service.create as jest.Mock).mockResolvedValue(dto);
-    await expect(controller.create(dto as any)).resolves.toEqual(dto);
+    await expect(controller.create(dto)).resolves.toEqual(dto);
     expect(service.create).toBeCalledWith(dto);
   });
 
@@ -54,7 +54,18 @@ describe('ProjectsController', () => {
   });
 
   it('remove calls service.remove', async () => {
-    (service.remove as jest.Mock).mockResolvedValue(undefined);
-    await expect(controller.remove('1')).resolves.toBeUndefined();
+    const mockReq = {
+      user: {
+        roles: ['admin'],
+        sub: 1,
+      },
+    };
+    
+    (service.findOne as jest.Mock).mockResolvedValue({ id: 1, ownerId: 1 });
+    (service.remove as jest.Mock).mockResolvedValue({ success: true });
+    
+    await expect(controller.remove('1', mockReq)).resolves.toEqual({ success: true });
+    expect(service.findOne).toBeCalledWith(1);
+    expect(service.remove).toBeCalledWith(1);
   });
 }); 
