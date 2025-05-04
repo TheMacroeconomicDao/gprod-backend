@@ -1,0 +1,44 @@
+version: '3.8'
+
+# Упрощенный docker-compose для локальной разработки
+# Для полной инфраструктуры используйте файлы из репозитория gybernaty-infra
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: gprod_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: pnpm start:dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/gprod_dev
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata_dev:
+
+# Для развертывания полной инфраструктуры, включая мониторинг и Nginx,
+# используйте конфигурации из репозитория gybernaty-infra 
