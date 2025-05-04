@@ -31,6 +31,7 @@ dist/
 .env
 .env.*
 .env.visible
+!env.*.example
 
 # IDE/editor
 .vscode/
@@ -38,6 +39,8 @@ dist/
 !.vscode/extensions.json
 .idea/
 .DS_Store
+.cursor/
+.cursor/*
 
 # pnpm
 .pnpm-debug.log*
@@ -66,9 +69,23 @@ generated/*
 *.swp
 *.swo
 
-# Custom
-.cursor/
-.cursor/*
+# Test reports
+jest-e2e-report.json
+*-report.json
+
+# Sensitive documentation files
+*РЕКОМЕНДАЦИИ_ПО_ДОРАБОТКЕ.md
+
+# Temporary files
+tmp/
+temp/
+
+# Personal notes
+notes.md
+TODO.md
+
+# Local development files
+*.local.*
 
 # Seed artifacts (если есть)
 prisma/seed.ts
