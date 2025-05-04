@@ -351,33 +351,33 @@ options=("development" "staging" "production" "test" "все контуры")
 simple_select "Выберите контур для создания:" "${options[@]}"
 env_type=$?
 
-case $env_type in
+    case $env_type in
     0)
-        DEFAULT_ENV="development"
-        ENV_FILE=".env.development"
+            DEFAULT_ENV="development"
+            ENV_FILE=".env.development"
         ENV_FILES=("development")
-        ;;
+            ;;
     1)
-        DEFAULT_ENV="staging"
-        ENV_FILE=".env.staging"
+            DEFAULT_ENV="staging"
+            ENV_FILE=".env.staging"
         ENV_FILES=("staging")
-        ;;
+            ;;
     2)
-        DEFAULT_ENV="production"
-        ENV_FILE=".env.production"
+            DEFAULT_ENV="production"
+            ENV_FILE=".env.production"
         ENV_FILES=("production")
-        ;;
+            ;;
     3)
-        DEFAULT_ENV="test"
-        ENV_FILE=".env.test"
+            DEFAULT_ENV="test"
+            ENV_FILE=".env.test"
         ENV_FILES=("test")
         ;;
     4)
         DEFAULT_ENV="development"
         ENV_FILE=".env.development"
         ENV_FILES=("development" "staging" "production" "test")
-        ;;
-esac
+            ;;
+    esac
 
 # Копируем шаблоны для выбранных контуров
 for env in "${ENV_FILES[@]}"; do
@@ -403,9 +403,9 @@ if [ "$DOCKER_AVAILABLE" = true ]; then
     run_mode=$?
     
     if [ $run_mode -eq 0 ]; then
-        USE_DOCKER=true
+                USE_DOCKER=true
     else
-        USE_DOCKER=false
+                USE_DOCKER=false
     fi
 else
     USE_DOCKER=false
@@ -440,39 +440,39 @@ arrow_select "Хотите настроить дополнительные па�
 customize=$?
 
 if [ $customize -eq 0 ]; then
-    # Порт
-    read -p "$(echo -e $BLUE"Порт для API (оставьте пустым для значения по умолчанию): "$NC)" custom_port
-    if [ ! -z "$custom_port" ]; then
-        "${SED_INPLACE[@]}" "s/PORT=[0-9]*/PORT=$custom_port/" "$ENV_FILE"
-        print_success "Порт установлен: $custom_port"
-    fi
-    
-    # JWT Secret
-    read -p "$(echo -e $BLUE"JWT Secret (оставьте пустым для значения по умолчанию): "$NC)" custom_jwt
-    if [ ! -z "$custom_jwt" ]; then
-        "${SED_INPLACE[@]}" "s/JWT_SECRET=.*/JWT_SECRET=$custom_jwt/" "$ENV_FILE"
-        print_success "JWT Secret обновлен"
-    fi
-    
-    # Режим отладки
+            # Порт
+            read -p "$(echo -e $BLUE"Порт для API (оставьте пустым для значения по умолчанию): "$NC)" custom_port
+            if [ ! -z "$custom_port" ]; then
+                "${SED_INPLACE[@]}" "s/PORT=[0-9]*/PORT=$custom_port/" "$ENV_FILE"
+                print_success "Порт установлен: $custom_port"
+            fi
+            
+            # JWT Secret
+            read -p "$(echo -e $BLUE"JWT Secret (оставьте пустым для значения по умолчанию): "$NC)" custom_jwt
+            if [ ! -z "$custom_jwt" ]; then
+                "${SED_INPLACE[@]}" "s/JWT_SECRET=.*/JWT_SECRET=$custom_jwt/" "$ENV_FILE"
+                print_success "JWT Secret обновлен"
+            fi
+            
+            # Режим отладки
     options=("Да" "Нет")
     arrow_select "Включить режим отладки?" "${options[@]}"
     debug_mode=$?
     
     if [ $debug_mode -eq 0 ]; then
-        "${SED_INPLACE[@]}" "s/DEBUG=false/DEBUG=true/" "$ENV_FILE"
-        print_success "Режим отладки включен"
+                "${SED_INPLACE[@]}" "s/DEBUG=false/DEBUG=true/" "$ENV_FILE"
+                print_success "Режим отладки включен"
     else
         "${SED_INPLACE[@]}" "s/DEBUG=true/DEBUG=false/" "$ENV_FILE"
         print_success "Режим отладки выключен"
-    fi
-    
-    # MacOS fix for sed
-    if [ "$OS_TYPE" = "MacOS" ]; then
-        rm -f "${ENV_FILE}.bak" 2>/dev/null
-    fi
+            fi
+            
+            # MacOS fix for sed
+            if [ "$OS_TYPE" = "MacOS" ]; then
+                rm -f "${ENV_FILE}.bak" 2>/dev/null
+            fi
 else
-    print_info "Используем значения по умолчанию"
+            print_info "Используем значения по умолчанию"
 fi
 
 print_header "✅ Настройка окружения завершена успешно!"
@@ -500,8 +500,8 @@ if [ $should_run -eq 0 ]; then
             print_info "Проверяем наличие файла в директории docker/"
             if [ -f "docker/docker-compose.reference.yml" ]; then
                 docker compose -f docker/docker-compose.reference.yml up -d
-            else
-                print_error "Файл docker-compose.reference.yml не найден"
+        else
+            print_error "Файл docker-compose.reference.yml не найден"
             fi
         fi
     else

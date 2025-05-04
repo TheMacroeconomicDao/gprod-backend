@@ -49,7 +49,7 @@ print_step() {
 # Получение директорий
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../" && pwd)"
-DOCKER_DIR="$PROJECT_ROOT/automation/docker"
+DOCKER_DIR="$PROJECT_ROOT/docker"
 
 # Проверка параметров
 if [ $# -lt 1 ]; then

@@ -1,24 +1,26 @@
 #!/bin/bash
 
 # ===================================================
-# 🚀 GPROD Automation Runner
+# 🚀 GPROD Automation Script
 # ===================================================
-# Универсальный скрипт для управления автоматизацией
-# 
+# Главный скрипт для управления автоматизацией проекта
+#
 # Использование:
-#   ./run.sh <команда> [аргументы]
+#   ./automation/run.sh <команда> [контур]
 #
 # Команды:
-#   env <dev|stage|prod>  - настройка окружения
-#   run <dev|stage|prod>  - запуск контура
-#   stop <dev|stage|prod> - остановка контура
-#   logs <dev|stage|prod> - просмотр логов контура
-#   test                  - запуск тестов
-#   help                  - показать помощь
+#   env   - настройка окружения
+#   run   - запуск окружения (настройка + запуск Docker)
+#   stop  - остановка окружения
+#   logs  - просмотр логов
+#   test  - запуск тестов
+#
+# Контуры:
+#   dev, stage, prod, reference
 
-# Цвета для красивого вывода
-RED='\033[0;31m'
+# Цвета для вывода
 GREEN='\033[0;32m'
+RED='\033[0;31m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
@@ -48,123 +50,63 @@ print_step() {
   echo -e "${PURPLE}→ $1${NC}"
 }
 
-# Получение каталога скрипта
+# Получение директорий
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../" && pwd)"
-DOCKER_DIR="$SCRIPT_DIR/docker"
-ENV_DIR="$SCRIPT_DIR/env"
-SCRIPTS_DIR="$SCRIPT_DIR/scripts"
-
-# Функция для показа помощи
-show_help() {
-  print_header "🚀 GPROD Automation Runner"
-  print_info "Использование: ./run.sh <команда> [аргументы]"
-  print_info "Команды:"
-  print_info "  env <dev|stage|prod>  - настройка окружения"
-  print_info "  run <dev|stage|prod>  - запуск контура"
-  print_info "  stop <dev|stage|prod> - остановка контура"
-  print_info "  logs <dev|stage|prod> - просмотр логов контура"
-  print_info "  test                  - запуск тестов"
-  print_info "  help                  - показать помощь"
-  print_info "Примеры:"
-  print_info "  ./run.sh env dev      - настройка development окружения"
-  print_info "  ./run.sh run stage    - запуск staging контура"
-  print_info "  ./run.sh stop prod    - остановка production контура"
-}
+ENV_MANAGER="$SCRIPT_DIR/env/env-manager.sh"
+DOCKER_MANAGER="$PROJECT_ROOT/docker/docker-manager.sh"
+TEST_SCRIPT="$SCRIPT_DIR/scripts/run-tests.sh"
 
 # Проверка наличия параметров
 if [ $# -lt 1 ]; then
-  show_help
+  print_header "🚀 GPROD Automation Script"
+  print_error "Не указана команда"
+  print_info "Использование: ./automation/run.sh <команда> [контур]"
+  print_info "Команды: env, run, stop, logs, test"
+  print_info "Контуры: dev, stage, prod, reference"
   exit 1
 fi
 
-# Обработка команды
 COMMAND=$1
-shift
+ENV=${2:-dev}  # По умолчанию используем dev
 
+# Выполнение команды
 case $COMMAND in
   env)
-    # Настройка окружения
-    if [ $# -lt 1 ]; then
-      print_error "Не указан контур окружения"
-      print_info "Использование: ./run.sh env <dev|stage|prod>"
-      exit 1
-    fi
-    ENV=$1
-    print_header "🌟 Настройка окружения $ENV"
-    bash "$ENV_DIR/env-manager.sh" "$ENV" "$@"
+    print_header "🌟 Настройка окружения: $ENV"
+    bash "$ENV_MANAGER" "$ENV" "$3" "$4"
     ;;
-  
   run)
-    # Запуск контура
-    if [ $# -lt 1 ]; then
-      print_error "Не указан контур для запуска"
-      print_info "Использование: ./run.sh run <dev|stage|prod>"
-      exit 1
-    fi
-    ENV=$1
-    print_header "🚀 Запуск контура $ENV"
+    print_header "🚀 Запуск окружения: $ENV"
+    print_step "Настройка окружения..."
+    bash "$ENV_MANAGER" "$ENV" --silent --docker
     
-    # Настраиваем окружение (тихий режим)
-    bash "$ENV_DIR/env-manager.sh" "$ENV" --silent
-    
-    # Запускаем Docker
-    bash "$DOCKER_DIR/docker-manager.sh" "$ENV" up
+    print_step "Запуск Docker контейнеров..."
+    bash "$DOCKER_MANAGER" "$ENV" up
     ;;
-  
   stop)
-    # Остановка контура
-    if [ $# -lt 1 ]; then
-      print_error "Не указан контур для остановки"
-      print_info "Использование: ./run.sh stop <dev|stage|prod>"
-      exit 1
-    fi
-    ENV=$1
-    print_header "🛑 Остановка контура $ENV"
-    
-    # Запускаем команду остановки
-    bash "$DOCKER_DIR/docker-manager.sh" "$ENV" down
+    print_header "🛑 Остановка окружения: $ENV"
+    bash "$DOCKER_MANAGER" "$ENV" down
     ;;
-  
   logs)
-    # Просмотр логов
-    if [ $# -lt 1 ]; then
-      print_error "Не указан контур для просмотра логов"
-      print_info "Использование: ./run.sh logs <dev|stage|prod>"
-      exit 1
-    fi
-    ENV=$1
-    print_header "📋 Просмотр логов контура $ENV"
-    
-    # Запускаем просмотр логов
-    bash "$DOCKER_DIR/docker-manager.sh" "$ENV" logs
+    print_header "📋 Просмотр логов: $ENV"
+    bash "$DOCKER_MANAGER" "$ENV" logs
     ;;
-  
   test)
-    # Запуск тестов
     print_header "🧪 Запуск тестов"
-    
-    # Если есть наш скрипт для тестов, используем его
-    if [ -f "$SCRIPTS_DIR/run-tests.sh" ]; then
-      bash "$SCRIPTS_DIR/run-tests.sh"
+    if [ "$ENV" = "unit" ] || [ "$ENV" = "e2e" ]; then
+      # Если второй параметр - тип теста
+      bash "$TEST_SCRIPT" "$ENV" "${@:3}"
     else
-      # Иначе используем основной скрипт из проекта
-      cd "$PROJECT_ROOT"
-      pnpm run test:smart
+      # Запуск всех тестов
+      bash "$TEST_SCRIPT" "${@:2}"
     fi
     ;;
-  
-  help)
-    # Показать помощь
-    show_help
-    ;;
-  
   *)
-    # Неизвестная команда
     print_error "Неизвестная команда: $COMMAND"
-    show_help
+    print_info "Доступные команды: env, run, stop, logs, test"
     exit 1
     ;;
 esac
 
-exit 0 
+exit 0
