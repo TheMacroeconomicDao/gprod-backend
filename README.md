@@ -31,13 +31,13 @@
 
 ## Инфраструктура
 
-Инфраструктурные конфигурации (Docker, Nginx, мониторинг) вынесены в отдельный репозиторий: [gybernaty-infra](https://github.com/yourusername/gybernaty-infra)
+Инфраструктурные конфигурации (Docker, Nginx, мониторинг) вынесены в отдельный репозиторий: [gybernaty-infra](https://github.com/TheMacroeconomicDao/gybernaty-infra)
 
 Для полного развертывания:
 
 1. Клонируйте инфраструктурный репозиторий
    ```sh
-   git clone https://github.com/yourusername/gybernaty-infra.git
+   git clone https://github.com/TheMacroeconomicDao/gybernaty-infra.git
    ```
 
 2. Используйте соответствующие docker-compose файлы для вашего окружения
