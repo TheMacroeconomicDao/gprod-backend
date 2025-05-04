@@ -9,8 +9,8 @@
 ## TL;DR: Быстрый старт проекта
 - **Клонирование репозитория:**
   ```sh
-  git clone https://github.com/yourusername/gprod-new-backend.git
-  cd gprod-new-backend
+  git clone https://github.com/TheMacroeconomicDao/gprod-backend.git
+  cd gprod-backend
   pnpm install
   ```
 
@@ -26,26 +26,48 @@
 - **Запуск базового окружения для разработки:**
   ```sh
   # Запуск минимального docker-compose для разработки
-  docker-compose -f docker-compose.reference.yml up -d
+  pnpm run docker:reference
   ```
 
 ## Инфраструктура
 
 Инфраструктурные конфигурации (Docker, Nginx, мониторинг) вынесены в отдельный репозиторий: [gybernaty-infra](https://github.com/TheMacroeconomicDao/gybernaty-infra)
 
-Для полного развертывания:
+### Разделенная архитектура
 
-1. Клонируйте инфраструктурный репозиторий
-   ```sh
-   git clone https://github.com/TheMacroeconomicDao/gybernaty-infra.git
-   ```
+Начиная с версии 2.0, проект использует разделенную архитектуру со следующими репозиториями:
 
-2. Используйте соответствующие docker-compose файлы для вашего окружения
-   ```sh
-   # Для продакшена
-   cd gybernaty-infra
-   docker-compose -f docker/docker-compose.yml -f docker/prod/docker-compose.prod.yml up -d
-   ```
+- **[gprod-backend](https://github.com/TheMacroeconomicDao/gprod-backend)** - код приложения, API, бизнес-логика
+- **[gybernaty-infra](https://github.com/TheMacroeconomicDao/gybernaty-infra)** - инфраструктурные конфигурации
+
+Такое разделение обеспечивает:
+- Чистоту кодовой базы приложения
+- Независимое развитие инфраструктуры
+- Соответствие принципам DevOps
+- Возможность иметь разные команды для разработки и инфраструктуры
+
+### Варианты запуска
+
+**Минимальный запуск** (только для разработки):
+```sh
+# Использование упрощенной конфигурации из основного репозитория
+pnpm run docker:reference
+```
+
+**Полный запуск** с использованием инфраструктурного репозитория:
+```sh
+# 1. Клонируем оба репозитория
+git clone https://github.com/TheMacroeconomicDao/gprod-backend.git
+git clone https://github.com/TheMacroeconomicDao/gybernaty-infra.git
+
+# 2. Запускаем инфраструктуру для нужного контура
+cd gybernaty-infra
+docker-compose -f docker/docker-compose.yml -f docker/prod/docker-compose.prod.yml up -d
+```
+
+### Полная документация
+
+Детальную информацию о работе с разделенной инфраструктурой смотрите в [документации по разделенной инфраструктуре](docs/split-infrastructure.md).
 
 - **Запуск в Docker (с автоматическими миграциями):**
   ```sh
@@ -54,10 +76,15 @@
   
 - **Запуск с ручным управлением окружением:**
   ```sh
-  # Запуск конкретного окружения с пересборкой контейнеров
-  pnpm run docker:dev:build   # development
-  pnpm run docker:stage:build # staging
-  pnpm run docker:prod:build  # production
+  # Запуск минимальной конфигурации (рекомендуется для разработки)
+  pnpm run docker:reference          # запуск
+  pnpm run docker:reference:down     # остановка
+  pnpm run docker:reference:restart  # перезапуск
+  pnpm run docker:reference:logs     # просмотр логов
+  pnpm run docker:reference:build    # пересборка
+  
+  # Запуск через инфраструктурный репозиторий (для полной конфигурации)
+  # См. документацию gybernaty-infra
   ```
 
 - **Запуск тестов:**
