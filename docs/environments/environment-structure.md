@@ -1,41 +1,27 @@
-# Структура переменных окружения для GPROD API
+# Структура переменных окружения
 
-## Обзор системы окружений
+## Форматы файлов окружения
 
-GPROD API поддерживает три контура окружения:
-1. **Development** (`.env.development`) - для локальной разработки
-2. **Staging** (`.env.staging`) - для тестирования перед релизом
-3. **Production** (`.env.production`) - для продакшен-окружения
+Для каждого контура используется отдельный файл переменных окружения, содержащий специфические для этого контура настройки:
 
-Переключение между контурами осуществляется через скрипты:
-```sh
-# Установка шаблонов для всех контуров
-pnpm run env:setup
-
-# Переключение на конкретный контур
-pnpm run env:dev:new     # активирует development
-pnpm run env:stage:new   # активирует staging
-pnpm run env:prod:new    # активирует production
-
-# Интерактивное переключение
-pnpm run env:switch:new  # выбор через консоль
-```
-
-## Новая структура файлов окружения
-
-Каждый контур имеет собственный файл с переменными окружения:
-
-- `.env.development` - для development контура
-- `.env.staging` - для staging контура 
-- `.env.production` - для production контура
-
-При переключении контура соответствующий файл копируется в `.env`.
-
-EnvHelper автоматически определяет контур на основе `NODE_ENV` и выбирает нужные переменные.
-
-## Структура переменных для DEVELOPMENT
+### Файловая структура
 
 ```
+.env.development   # Переменные для development
+.env.staging       # Переменные для staging
+.env.production    # Переменные для production
+.env.test          # Переменные для тестирования
+.env               # Активный файл (копия из одного из вышеперечисленных)
+.env-templates/    # Директория с шаблонами
+```
+
+## Структура контуров окружения
+
+Каждый контур имеет свой набор переменных, соответствующий его назначению. Ниже представлены основные группы переменных для каждого контура.
+
+### Development (.env.development)
+
+```dotenv
 # Основные настройки окружения
 NODE_ENV=development
 PORT=3000
@@ -50,39 +36,20 @@ JWT_REFRESH_EXPIRES=7d
 
 # Логирование
 LOG_LEVEL=debug
-LOG_FILE_PATH=./logs/app.log
+ENABLE_QUERY_LOGS=true
 
-# CORS и безопасность
-CORS_ENABLED=true
-CORS_ORIGIN=http://localhost:3000,http://localhost:5173
-RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
-RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
-
-# Дополнительные настройки
-APP_NAME=GPROD API (Dev)
-APP_VERSION=1.0.0
-HOST=localhost
-DOMAIN=localhost
-
-# Postgres
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=gprod_dev
-
-# Настройки хеширования паролей (Argon2)
-ARGON2_MEMORY_COST=4096      # Использование памяти (в КБ)
-ARGON2_TIME_COST=3           # Количество итераций
-ARGON2_PARALLELISM=1         # Степень параллелизма
+# Для разработчиков
+DEBUG=true
+ENABLE_SWAGGER=true
+CORS_ORIGIN=*
 ```
 
-## Структура переменных для STAGING
+### Staging (.env.staging)
 
-```
+```dotenv
 # Основные настройки окружения
 NODE_ENV=staging
-PORT=3003
+PORT=3100
 
 # База данных
 DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_stage
@@ -94,226 +61,157 @@ JWT_REFRESH_EXPIRES=7d
 
 # Логирование
 LOG_LEVEL=info
-LOG_FILE_PATH=./logs/app.log
+ENABLE_QUERY_LOGS=true
 
-# CORS и безопасность
-CORS_ENABLED=true
-CORS_ORIGIN=https://stage.gprod.com,https://stage-admin.gprod.com
-RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
-RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
+# Настройки мониторинга
+ENABLE_METRICS=true
+METRICS_PORT=9100
 
-# Дополнительные настройки
-APP_NAME=GPROD API (Staging)
-APP_VERSION=1.0.0
-HOST=localhost
-DOMAIN=stage.gprod.com
-
-# Postgres
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=gprod_stage
-
-# Настройки хеширования паролей (Argon2)
-ARGON2_MEMORY_COST=4096
-ARGON2_TIME_COST=3
-ARGON2_PARALLELISM=1
-
-# Prometheus и Grafana
-PROMETHEUS_PORT=9090
-GRAFANA_PORT=3100
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=admin
+# Безопасность и доступ
+CORS_ORIGIN=https://stage-app.example.com
 ```
 
-## Структура переменных для PRODUCTION
+### Production (.env.production)
 
-```
+```dotenv
 # Основные настройки окружения
 NODE_ENV=production
-PORT=3007
+PORT=3200
 
 # База данных
-DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/gprod_prod
+DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_prod
 
 # Авторизация и JWT
-JWT_SECRET=super_secure_jwt_secret_for_production
-JWT_EXPIRES=1h
-JWT_REFRESH_EXPIRES=30d
+JWT_SECRET=prod_jwt_secret_use_strong_value_here
+JWT_EXPIRES=900s
+JWT_REFRESH_EXPIRES=7d
 
 # Логирование
-LOG_LEVEL=info
-LOG_FILE_PATH=/var/log/gprod/app.log
+LOG_LEVEL=warn
+ENABLE_QUERY_LOGS=false
 
-# CORS и безопасность
-CORS_ENABLED=true
-CORS_ORIGIN=https://gprod.com,https://admin.gprod.com
-RATE_LIMIT_WINDOW_MS=900000  # 15 минут в миллисекундах
-RATE_LIMIT_MAX=100  # Максимальное количество запросов в окне
+# Настройки мониторинга
+ENABLE_METRICS=true
+METRICS_PORT=9200
 
-# Дополнительные настройки
-APP_NAME=GPROD API
-APP_VERSION=1.0.0
-HOST=localhost
-DOMAIN=gprod.com
-
-# Postgres
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=super_secure_postgres_password
-POSTGRES_DB=gprod_prod
-
-# Настройки хеширования паролей (Argon2) - повышены для production
-ARGON2_MEMORY_COST=8192
-ARGON2_TIME_COST=4
-ARGON2_PARALLELISM=2
-
-# Redis для кэширования
-REDIS_HOST=redis
-REDIS_PORT=6379
-REDIS_PASSWORD=super_secure_redis_password
-
-# Nginx
-NGINX_PORT=80
-NGINX_SSL_PORT=443
-SSL_CERTIFICATE_PATH=/etc/ssl/certs/gprod.crt
-SSL_KEY_PATH=/etc/ssl/private/gprod.key
-
-# Prometheus и Grafana
-GRAFANA_PORT=3500
-GRAFANA_ADMIN_USER=admin
-GRAFANA_ADMIN_PASSWORD=super_secure_grafana_password
+# Безопасность
+CORS_ORIGIN=https://app.example.com
+RATE_LIMIT=100
 ```
 
-## Контур для тестирования (E2E-тесты)
+### Test (.env.test)
 
-```
-# Тестовое окружение
+```dotenv
+# Основные настройки окружения
 NODE_ENV=test
-TEST_DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_test
+PORT=3300
 
-# Тестовые JWT настройки
-JWT_SECRET=test_secret_key_for_jwt_e2e_tests
+# База данных
+DATABASE_URL=postgresql://postgres:postgres@db:5432/gprod_test
+
+# Авторизация и JWT
+JWT_SECRET=test_jwt_secret
 JWT_EXPIRES=3600s
 JWT_REFRESH_EXPIRES=7d
 
-# Хост API для E2E тестов
-BASE_URL=http://localhost:3000
+# Логирование
+LOG_LEVEL=error
+ENABLE_QUERY_LOGS=false
 ```
 
-## Доступ к переменным через EnvHelper
+## Группы переменных окружения
 
-Класс `EnvHelper` в проекте предоставляет удобные типизированные методы для работы с переменными окружения:
+Для удобства поддержки, все переменные окружения сгруппированы по функциональным блокам:
 
-```typescript
-// Строковые значения (с резервным значением)
-const jwtSecret = EnvHelper.get('JWT_SECRET', 'default-secret');
+### Основные настройки
 
-// Числовые значения 
-const port = EnvHelper.int('PORT', 3000);
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `NODE_ENV` | Контур окружения | `development`, `staging`, `production`, `test` |
+| `PORT` | Порт для API | `3000`, `3100`, `3200` |
+| `HOST` | Хост для API | `localhost`, `0.0.0.0` |
+| `API_PREFIX` | Префикс для всех API эндпоинтов | `/api/v1` |
 
-// Логические значения
-const isCorsEnabled = EnvHelper.bool('CORS_ENABLED', true);
+### База данных
 
-// Массивы строк (например, для CORS_ORIGIN)
-const corsOrigins = EnvHelper.array('CORS_ORIGIN', ['http://localhost:3000']);
-```
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `DATABASE_URL` | URL подключения к PostgreSQL | `postgresql://user:pass@host:port/db` |
+| `DB_MIGRATIONS` | Флаг автоматического применения миграций | `true`, `false` |
 
-## Обратная совместимость
+### Аутентификация и безопасность
 
-EnvHelper также поддерживает обратную совместимость с префиксированными переменными:
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `JWT_SECRET` | Секретный ключ для JWT | `your-secret-key` |
+| `JWT_EXPIRES` | Время жизни JWT | `15m`, `1h`, `1d` |
+| `JWT_REFRESH_EXPIRES` | Время жизни Refresh-токена | `7d`, `30d` |
+| `CORS_ORIGIN` | Разрешенные источники для CORS | `*`, `https://example.com` |
+| `RATE_LIMIT` | Лимит запросов в минуту | `100`, `500` |
 
-1. Сначала проверяет обычную переменную (например, `PORT`)
-2. Затем проверяет префиксированную переменную для текущего контура (например, `DEV_PORT` в development)
-3. При необходимости ищет в переменных других контуров для fallback
+### Логирование
 
-## Рекомендации по безопасности
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `LOG_LEVEL` | Минимальный уровень логов | `debug`, `info`, `warn`, `error` |
+| `ENABLE_QUERY_LOGS` | Логирование запросов к БД | `true`, `false` |
+| `LOG_FORMAT` | Формат логов | `json`, `simple` |
 
-1. **Никогда не коммитьте** реальные .env файлы в репозиторий
-2. Используйте надежные случайные значения для секретов:
-   ```bash
-   # Генерация надежного JWT_SECRET
-   openssl rand -base64 32
-   ```
-3. В production используйте:
-   - Системы управления секретами (HashiCorp Vault, AWS Secrets Manager)
-   - Переменные окружения контейнеров вместо .env файлов
-   - Разные пароли для разных сервисов
-4. Регулярно обновляйте секреты
-5. Для JWT_SECRET - минимум 32 случайных символа
-6. Используйте разные JWT_SECRET для разных окружений
+### Дополнительные сервисы
 
-## Примечания по Docker
+| Переменная | Описание | Пример |
+|------------|----------|--------|
+| `REDIS_URL` | URL подключения к Redis | `redis://localhost:6379` |
+| `KAFKA_BROKERS` | Список брокеров Kafka | `localhost:9092` |
+| `ENABLE_METRICS` | Включение сбора метрик | `true`, `false` |
+| `METRICS_PORT` | Порт для Prometheus метрик | `9100` |
 
-При запуске в Docker все переменные должны быть определены в `docker-compose.yml` файле или `.env` файле, который Docker Compose автоматически подхватывает. 
+## Особенности хранения секретов
 
-Для передачи переменных в контейнер можно использовать `environment` или `env_file`:
+### Правила безопасности
 
-```yaml
-services:
-  app:
-    build: .
-    environment:
-      - NODE_ENV=production
-      - PORT=3007
-    # или
-    env_file:
-      - .env.production
-```
+1. **Не храните реальные секреты в git** - только шаблоны и примеры
+2. **Используйте отдельные .env файлы** для каждого окружения
+3. **Генерируйте уникальные значения** для JWT_SECRET и других секретов в каждом окружении
+4. **Используйте системы управления секретами** для production (Vault, AWS Secrets Manager и т.д.)
 
-## Модульная архитектура для работы с окружением
+### Шаблоны в .env-templates
 
-### Новая структура файлов
-
-В новой версии приложения работа с переменными окружения реализована через отдельный модуль:
+В репозитории хранятся только шаблоны .env файлов с примерами значений, но без реальных секретов:
 
 ```
-src/common/environment/
-├── environment.module.ts     # Модуль для внедрения зависимостей
-├── environment.service.ts    # Сервис для работы с переменными окружения
-└── index.ts                  # Экспорт всех компонентов модуля
+.env-templates/
+├── .env.development.template
+├── .env.staging.template
+├── .env.production.template
+└── .env.test.template
 ```
 
-### EnvironmentService
+Пример .env.development.template:
 
-`EnvironmentService` предоставляет объектно-ориентированный подход к работе с переменными окружения:
+```dotenv
+# Основные настройки
+NODE_ENV=development
+PORT=3000
+HOST=localhost
+API_PREFIX=/api/v1
 
-```typescript
-// Пример получения переменных окружения через EnvironmentService
-@Injectable()
-export class AppService {
-  constructor(private readonly environment: EnvironmentService) {}
+# База данных (замените значения на свои)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/gprod_dev
 
-  getPort(): number {
-    return this.environment.getPort();
-  }
-
-  getDatabaseUrl(): string {
-    return this.environment.getString('DATABASE_URL');
-  }
-}
+# Секреты (замените значения на свои)
+JWT_SECRET=dev_jwt_secret_change_me
+JWT_EXPIRES=1h
 ```
 
-### Преимущества новой структуры
+## Правила именования переменных
 
-1. **Dependency Injection** - EnvironmentService внедряется через конструктор
-2. **Тестируемость** - можно легко мокать сервис для тестов
-3. **Типизация** - строгая типизация для всех методов
-4. **Единая точка доступа** - все переменные получаются из одного сервиса
-5. **Автоматическая загрузка** - .env файлы загружаются автоматически при создании сервиса
-
-### Поддерживаемые методы
-
-- `getString(key, defaultValue?)` - получение строкового значения
-- `getStringOrThrow(key)` - получение строкового значения с выбросом ошибки, если не найдено
-- `getNumber(key, defaultValue?)` - получение числового значения
-- `getBoolean(key, defaultValue?)` - получение логического значения
-- `getArray(key, defaultValue?)` - получение массива строк
-- `getPort()` - получение порта приложения
-- `environment` - текущее окружение (`development`, `staging`, `production`, `test`)
-- `isDevelopment`, `isStaging`, `isProduction`, `isTest` - проверка текущего окружения
-- `isDocker` - проверка, запущено ли приложение в Docker
-``` 
-</rewritten_file>
+1. **ВЕРХНИЙ_РЕГИСТР** для всех переменных
+2. **Разделение подчеркиванием** между словами
+3. **Префикс модуля** для связанных переменных (например, `JWT_*`)
+4. **Логичные суффиксы**:
+   - `_URL` для URL-адресов
+   - `_PORT` для портов
+   - `_SECRET` для секретов
+   - `_ENABLED` для флагов
+   - `_PATH` для путей к файлам

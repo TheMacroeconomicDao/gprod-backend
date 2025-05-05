@@ -1,6 +1,6 @@
 # GPROD Backend (Gybernaty Community)
 
-**Production-ready бэкенд на NestJS + Prisma + PostgreSQL + pnpm + Docker**
+Production-ready бэкенд на NestJS + Prisma + PostgreSQL + pnpm + Docker
 
 ## Статус проекта
 
@@ -91,6 +91,10 @@ pnpm run docker:test:clean
 - [📋 Разработка](docs/development/README.md) - Процесс разработки
 - [🧪 Тестирование](docs/testing/README.md) - Стратегия тестирования
 - [🐳 Docker](docs/docker/README.md) - Docker-конфигурации
+
+## Контрибьютинг
+
+Подробная информация о том, как внести вклад в проект, доступна в [руководстве по контрибьютингу](docs/development/contributing.md).
 
 ## Технологический стек
 
