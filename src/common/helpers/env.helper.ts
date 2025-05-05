@@ -332,10 +332,44 @@ export class EnvHelper {
 
   /**
    * Получает порт для HTTP сервера
+   * Учитывает окружение и Docker-контекст для более надежной работы
    * @returns Номер порта
    */
   static getPort(): number {
-    return this.int('PORT', 3000, true);
+    // Получаем порт из переменных окружения с более строгой проверкой
+    const portFromEnv = process.env.PORT;
+    
+    // Если порт уже определен через process.env напрямую
+    if (portFromEnv) {
+      const parsedPort = parseInt(portFromEnv, 10);
+      if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort < 65536) {
+        return parsedPort; 
+      }
+      // Если порт некорректен, выводим предупреждение в консоль
+      console.warn(`[EnvHelper] Некорректное значение PORT в env: "${portFromEnv}". Будет использовано значение по умолчанию.`);
+    }
+    
+    // Пробуем получить порт из кэша или через get метод
+    const envPort = this.int('PORT', 0, false);
+    
+    // Если порт определен через EnvHelper и валиден
+    if (envPort > 0 && envPort < 65536) {
+      return envPort;
+    }
+    
+    // Используем порты по умолчанию в зависимости от окружения
+    if (this.isDevelopment) {
+      return 3008; // Порт для разработки
+    } else if (this.isStaging) {
+      return 3003; // Порт для стейджинга
+    } else if (this.isProduction) {
+      return 3007; // Порт для продакшена
+    } else if (this.isTest) {
+      return 3009; // Порт для тестов
+    }
+    
+    // Если ничего не определено, используем 3000 как самый последний fallback
+    return 3000;
   }
 
   /**

@@ -7,6 +7,60 @@ import { EnvHelper } from './common/helpers/env.helper';
 import { WinstonLogger } from './common/logger/winston.logger';
 import * as express from 'express';
 import helmet from 'helmet';
+import * as fs from 'fs';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Улучшенная загрузка .env файла на основе NODE_ENV
+function loadEnvFile() {
+  // Получаем текущее окружение из переменной NODE_ENV
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  
+  // Формируем имена потенциальных .env файлов
+  const envFile = `.env.${nodeEnv}`;
+  const defaultEnvFile = '.env';
+  
+  const logger = new WinstonLogger('EnvLoader');
+  
+  // Список файлов для проверки в порядке приоритета
+  const envFiles = [
+    envFile,           // .env.development, .env.production, ...
+    defaultEnvFile,    // .env (обычно симлинк на активный контур)
+  ];
+  
+  // Флаг успешной загрузки
+  let envLoaded = false;
+  
+  // Перебираем файлы и загружаем первый найденный
+  for (const file of envFiles) {
+    if (fs.existsSync(file)) {
+      logger.log(`Загружаем переменные окружения из ${file}`);
+      
+      // Загружаем переменные из файла
+      const result = dotenv.config({ path: file });
+      
+      if (result.error) {
+        logger.error(`Ошибка при загрузке ${file}: ${result.error}`);
+        continue;
+      }
+      
+      envLoaded = true;
+      break;
+    }
+  }
+  
+  // Если не удалось загрузить ни один файл
+  if (!envLoaded) {
+    logger.warn(`Ни один из .env файлов не найден (искали: ${envFiles.join(', ')}). Используем только системные переменные окружения.`);
+  }
+  
+  // Отладочный вывод для важных переменных
+  if (process.env.DEBUG === 'true') {
+    logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
+    logger.debug(`PORT: ${process.env.PORT}`);
+    logger.debug(`DATABASE_URL: ${process.env.DATABASE_URL ? '***настроен***' : 'не настроен'}`);
+  }
+}
 
 // Исправленная функция проверки схемы
 async function checkSchema() {
@@ -34,6 +88,12 @@ async function checkSchema() {
 
 // Bootstrap function for starting the NestJS application
 async function bootstrap() {
+  // Загружаем переменные окружения до создания логгера
+  loadEnvFile();
+  
+  // Очищаем кэш EnvHelper, чтобы гарантировать актуальность переменных
+  EnvHelper.clearCache();
+  
   // WinstonLogger for structured logging (info, error, etc.)
   const logger = new WinstonLogger('Bootstrap');
   try {
@@ -112,8 +172,8 @@ async function bootstrap() {
     });
     SwaggerModule.setup('api/v2/docs', app, v2Document);
 
-    // Запуск приложения на порту из ENV (по умолчанию 3007)
-    const port = EnvHelper.int('PORT', 3007);
+    // Запуск приложения на порту из ENV (используем getPort из EnvHelper)
+    const port = EnvHelper.getPort();
     await app.listen(port);
     logger.log(`Application started successfully on port ${port}`);
   } catch (err) {

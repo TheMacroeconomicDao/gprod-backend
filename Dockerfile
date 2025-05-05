@@ -1,10 +1,23 @@
 FROM node:20-alpine
 WORKDIR /app
+
+# Добавляем аргумент для пропуска установки зависимостей
+ARG SKIP_INSTALL=false
+
 COPY package*.json ./
 COPY pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Устанавливаем зависимости только если SKIP_INSTALL=false
+RUN echo "SKIP_INSTALL value: $SKIP_INSTALL" && \
+    npm install -g pnpm && \
+    if [ "$SKIP_INSTALL" = "true" ]; then \
+        echo "Skipping dependencies installation..."; \
+    else \
+        echo "Installing dependencies..." && \
+        pnpm install --frozen-lockfile; \
+    fi
 COPY prisma ./prisma
-COPY scripts ./scripts
+COPY automation/scripts ./scripts
 RUN chmod +x ./scripts/*.sh
 COPY . .
 RUN npx prisma generate
