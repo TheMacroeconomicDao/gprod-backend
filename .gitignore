@@ -35,6 +35,8 @@ dist/
 !env.*.example
 
 # IDE/editor
+cursor-memory-bank/
+cursor-memory-bank/*
 .memory/
 .memory/*
 .vscode/
