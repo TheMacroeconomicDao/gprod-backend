@@ -19,7 +19,7 @@ const prisma = new PrismaClient({
 export async function cleanDb(preserveUsers = false): Promise<void> {
   try {
     console.log('Используется URL базы данных:', prismaUrl);
-    
+
     // Проверяем структуру базы данных
     let hasRefreshToken = true;
     let hasProject = true;
@@ -29,7 +29,10 @@ export async function cleanDb(preserveUsers = false): Promise<void> {
       await prisma.$executeRaw`DELETE FROM "RefreshToken" WHERE FALSE;`;
       console.log('Таблица RefreshToken существует');
     } catch (err) {
-      console.log('Таблица RefreshToken не существует или не доступна:', (err as Error).message);
+      console.log(
+        'Таблица RefreshToken не существует или не доступна:',
+        (err as Error).message,
+      );
       hasRefreshToken = false;
     }
 
@@ -37,7 +40,10 @@ export async function cleanDb(preserveUsers = false): Promise<void> {
       await prisma.$executeRaw`DELETE FROM "Project" WHERE FALSE;`;
       console.log('Таблица Project существует');
     } catch (err) {
-      console.log('Таблица Project не существует или не доступна:', (err as Error).message);
+      console.log(
+        'Таблица Project не существует или не доступна:',
+        (err as Error).message,
+      );
       hasProject = false;
     }
 
@@ -57,10 +63,12 @@ export async function cleanDb(preserveUsers = false): Promise<void> {
       await prisma.$executeRaw`TRUNCATE "User" CASCADE;`;
       console.log('Таблица User очищена');
     }
-    
-    console.log(`База данных успешно очищена${preserveUsers ? ' (сохранены пользователи)' : ''}`);
+
+    console.log(
+      `База данных успешно очищена${preserveUsers ? ' (сохранены пользователи)' : ''}`,
+    );
   } catch (error) {
     console.error('Ошибка при очистке базы данных:', error);
     throw error;
   }
-} 
+}

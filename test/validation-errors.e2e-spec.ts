@@ -16,13 +16,23 @@ describe('Validation/errors (e2e)', () => {
     }).compile();
     app = moduleFixture.createNestApplication();
     await setupE2EApp(app);
-    const reg = await request(app.getHttpServer()).post('/api/v1/auth/register').send({ username: 'valerr1', email: 'valerr1@mail.com', password: '123456' });
+    const reg = await request(app.getHttpServer())
+      .post('/api/v1/auth/register')
+      .send({
+        username: 'valerr1',
+        email: 'valerr1@mail.com',
+        password: '123456',
+      });
     expect(reg.status).toBe(201);
-    const res = await request(app.getHttpServer()).post('/api/v1/auth/login').send({ username: 'valerr1', password: '123456' });
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ username: 'valerr1', password: '123456' });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeDefined();
     token = res.body.access_token;
-    const users = await request(app.getHttpServer()).get('/api/v1/users').set('Authorization', `Bearer ${token}`);
+    const users = await request(app.getHttpServer())
+      .get('/api/v1/users')
+      .set('Authorization', `Bearer ${token}`);
     expect(users.status).toBe(200);
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
@@ -42,17 +52,20 @@ describe('Validation/errors (e2e)', () => {
   it('409 если username/email неуникальны', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ username: 'valerr1', email: 'valerr1@mail.com', password: '123456' });
+      .send({
+        username: 'valerr1',
+        email: 'valerr1@mail.com',
+        password: '123456',
+      });
     expect(res.status).toBe(409);
   });
 
   it('500 если вызвать несуществующий эндпоинт', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/doesnotexist');
+    const res = await request(app.getHttpServer()).get('/api/v1/doesnotexist');
     expect(res.status).toBe(404);
   });
 
   afterAll(async () => {
     await app.close();
   });
-}); 
+});

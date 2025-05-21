@@ -15,63 +15,69 @@ import * as path from 'path';
 function loadEnvFile() {
   // Получаем текущее окружение из переменной NODE_ENV
   const nodeEnv = process.env.NODE_ENV || 'development';
-  
+
   // Формируем имена потенциальных .env файлов
   const envFile = `.env.${nodeEnv}`;
   const defaultEnvFile = '.env';
-  
+
   const logger = new WinstonLogger('EnvLoader');
-  
+
   // Список файлов для проверки в порядке приоритета
   const envFiles = [
-    envFile,           // .env.development, .env.production, ...
-    defaultEnvFile,    // .env (обычно симлинк на активный контур)
+    envFile, // .env.development, .env.production, ...
+    defaultEnvFile, // .env (обычно симлинк на активный контур)
   ];
-  
+
   // Флаг успешной загрузки
   let envLoaded = false;
-  
+
   // Перебираем файлы и загружаем первый найденный
   for (const file of envFiles) {
     if (fs.existsSync(file)) {
       logger.log(`Загружаем переменные окружения из ${file}`);
-      
+
       // Загружаем переменные из файла
       const result = dotenv.config({ path: file });
-      
+
       if (result.error) {
         logger.error(`Ошибка при загрузке ${file}: ${result.error}`);
         continue;
       }
-      
+
       envLoaded = true;
       break;
     }
   }
-  
+
   // Если не удалось загрузить ни один файл
   if (!envLoaded) {
-    logger.warn(`Ни один из .env файлов не найден (искали: ${envFiles.join(', ')}). Используем только системные переменные окружения.`);
+    logger.warn(
+      `Ни один из .env файлов не найден (искали: ${envFiles.join(', ')}). Используем только системные переменные окружения.`,
+    );
   }
-  
+
   // Отладочный вывод для важных переменных
   if (process.env.DEBUG === 'true') {
     logger.debug(`NODE_ENV: ${process.env.NODE_ENV}`);
     logger.debug(`PORT: ${process.env.PORT}`);
-    logger.debug(`DATABASE_URL: ${process.env.DATABASE_URL ? '***настроен***' : 'не настроен'}`);
+    logger.debug(
+      `DATABASE_URL: ${process.env.DATABASE_URL ? '***настроен***' : 'не настроен'}`,
+    );
   }
 }
 
 // Исправленная функция проверки схемы
 async function checkSchema() {
   const logger = new WinstonLogger('Database');
-  
+
   // Пропускаем проверку, если мы в режиме тестирования логгера
   if (EnvHelper.get('LOGGER_TEST_MODE', 'false') === 'true') {
-    logger.log('Пропускаем проверку схемы базы данных (режим тестирования логгера)');
+    logger.log(
+      'Пропускаем проверку схемы базы данных (режим тестирования логгера)',
+    );
     return true;
   }
-  
+
   // Обычная проверка схемы для рабочего режима
   const { PrismaClient } = await import('@prisma/client');
   const prisma = new PrismaClient();
@@ -79,7 +85,10 @@ async function checkSchema() {
     await prisma.$queryRawUnsafe('SELECT roles FROM "User" LIMIT 1');
   } catch (e) {
     // Логируем и падаем, если нет поля
-    logger.error('FATAL: "roles" column missing in "User" table. Run migrations!', e.stack);
+    logger.error(
+      'FATAL: "roles" column missing in "User" table. Run migrations!',
+      e.stack,
+    );
     process.exit(1);
   } finally {
     await prisma.$disconnect();
@@ -90,23 +99,23 @@ async function checkSchema() {
 async function bootstrap() {
   // Загружаем переменные окружения до создания логгера
   loadEnvFile();
-  
+
   // Очищаем кэш EnvHelper, чтобы гарантировать актуальность переменных
   EnvHelper.clearCache();
-  
+
   // WinstonLogger for structured logging (info, error, etc.)
   const logger = new WinstonLogger('Bootstrap');
   try {
     // Проверяем схему до старта приложения
     await checkSchema();
-    
+
     logger.log('Starting application...');
-    
+
     // Создаём приложение с кастомным логгером
-    const app = await NestFactory.create(AppModule, { 
+    const app = await NestFactory.create(AppModule, {
       logger: logger,
       // Отключаем логирование NestJS-ом для входящих запросов, т.к. имеем свой middleware для этого
-      bufferLogs: true
+      bufferLogs: true,
     });
 
     // Включаем helmet с явной настройкой Content Security Policy (CSP)
@@ -116,14 +125,14 @@ async function bootstrap() {
         contentSecurityPolicy: {
           useDefaults: true,
           directives: {
-            "default-src": ["'self'"],
-            "img-src": ["'self'", 'data:', 'https:'],
-            "script-src": ["'self'", 'https:'],
-            "style-src": ["'self'", 'https:', "'unsafe-inline'"],
+            'default-src': ["'self'"],
+            'img-src': ["'self'", 'data:', 'https:'],
+            'script-src': ["'self'", 'https:'],
+            'style-src': ["'self'", 'https:', "'unsafe-inline'"],
             // Добавь свои домены если нужно
           },
         },
-      })
+      }),
     );
 
     // Включаем CORS с origin из ENV (CORS_ORIGIN=...)
@@ -139,7 +148,9 @@ async function bootstrap() {
     });
 
     // Глобальные пайпы для валидации DTO (class-validator)
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    );
     // Глобальный фильтр для обработки ошибок (кастомный формат)
     app.useGlobalFilters(new HttpExceptionFilter());
     // Ограничение размера body (1MB)

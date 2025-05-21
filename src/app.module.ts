@@ -13,12 +13,12 @@ import { RequestLoggerMiddleware } from './common/middleware/request-logger.midd
 import { EnvHelper } from './common/helpers/env.helper';
 
 // Импортируем модули через единую точку входа
-import { 
-  DatabaseModule, 
+import {
+  DatabaseModule,
   EnvironmentModule,
   SecurityModule,
   LoggerModule,
-  ConfigModule
+  ConfigModule,
 } from './common';
 
 @Module({
@@ -29,16 +29,11 @@ import {
     LoggerModule,
     SecurityModule,
     // Модули данных подключаем только если не тестируем логгер
-    ...(EnvHelper.get('LOGGER_TEST_MODE', 'false') === 'true' 
-      ? [] 
-      : [
-          DatabaseModule,
-          UsersModule,
-          ProjectsModule,
-          AuthModule,
-        ]),
+    ...(EnvHelper.get('LOGGER_TEST_MODE', 'false') === 'true'
+      ? []
+      : [DatabaseModule, UsersModule, ProjectsModule, AuthModule]),
     // Всегда подключаем модуль проверки здоровья системы
-    HealthModule
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -36,35 +36,28 @@
     "env:stage:new": "bash automation/env/env-switch-new.sh stage",
     "env:prod:new": "bash automation/env/env-switch-new.sh prod",
     "env:setup": "bash automation/env/setup-env-files.sh",
-    
     "auto": "bash automation/run.sh",
     "auto:env:dev": "bash automation/env/env-manager.sh dev",
-    "auto:env:stage": "bash automation/env/env-manager.sh stage", 
+    "auto:env:stage": "bash automation/env/env-manager.sh stage",
     "auto:env:prod": "bash automation/env/env-manager.sh prod",
-    
     "auto:run:dev": "bash automation/run.sh run dev",
     "auto:run:stage": "bash automation/run.sh run stage",
     "auto:run:prod": "bash automation/run.sh run prod",
     "auto:run:dev:rebuild": "bash automation/run.sh run dev --rebuild",
     "auto:run:stage:rebuild": "bash automation/run.sh run stage --rebuild",
     "auto:run:prod:rebuild": "bash automation/run.sh run prod --rebuild",
-    
     "auto:stop:dev": "bash automation/run.sh stop dev",
     "auto:stop:stage": "bash automation/run.sh stop stage",
-    "auto:stop:prod": "bash automation/run.sh stop prod", 
-    
+    "auto:stop:prod": "bash automation/run.sh stop prod",
     "auto:logs:dev": "bash automation/run.sh logs dev",
     "auto:logs:stage": "bash automation/run.sh logs stage",
     "auto:logs:prod": "bash automation/run.sh logs prod",
-    
     "auto:docker:dev": "bash docker/docker-manager.sh dev up",
     "auto:docker:stage": "bash docker/docker-manager.sh stage up",
     "auto:docker:prod": "bash docker/docker-manager.sh prod up",
     "auto:docker:reference": "bash docker/docker-manager.sh reference up",
-    
     "auto:test": "bash automation/run.sh test",
     "auto:interactive": "bash ./automation/run.sh interactive",
-    
     "lint": "eslint \"{src,apps,libs,test}/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -128,7 +121,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
-    "@eslint/js": "^9.18.0",
+    "@eslint/js": "^9.25.1",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
@@ -144,7 +137,7 @@
     "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
-    "eslint-plugin-prettier": "^5.2.2",
+    "eslint-plugin-prettier": "^5.2.6",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
     "prettier": "^3.4.2",
@@ -156,7 +149,7 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
-    "typescript-eslint": "^8.20.0"
+    "typescript-eslint": "^8.31.1"
   },
   "jest": {
     "moduleFileExtensions": [

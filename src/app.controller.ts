@@ -25,10 +25,15 @@ export class AppController {
     const env = (process.env.NODE_ENV || 'development').toLowerCase();
     const isProd = env === 'production';
     return {
-      name: buildInfo.name || process.env.npm_package_name || 'gprod-new-backend',
-      version: isProd ? undefined : (buildInfo.version || process.env.npm_package_version || 'unknown'),
+      name:
+        buildInfo.name || process.env.npm_package_name || 'gprod-new-backend',
+      version: isProd
+        ? undefined
+        : buildInfo.version || process.env.npm_package_version || 'unknown',
       buildTime: buildInfo.buildTime || process.env.BUILD_TIME || 'unknown',
-      gitHash: isProd ? undefined : (buildInfo.gitHash || process.env.GIT_HASH || 'unknown'),
+      gitHash: isProd
+        ? undefined
+        : buildInfo.gitHash || process.env.GIT_HASH || 'unknown',
       env: process.env.NODE_ENV || 'development',
     };
   }

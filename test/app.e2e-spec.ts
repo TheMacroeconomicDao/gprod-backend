@@ -21,7 +21,7 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/api/v1/')
       .expect(200)
-      .expect(res => {
+      .expect((res) => {
         expect(res.body).toHaveProperty('name');
         expect(res.body).toHaveProperty('buildTime');
       });

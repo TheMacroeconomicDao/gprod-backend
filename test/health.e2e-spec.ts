@@ -26,4 +26,4 @@ describe('Health-check (e2e)', () => {
   afterAll(async () => {
     await app.close();
   });
-}); 
+});

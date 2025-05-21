@@ -153,6 +153,16 @@ jobs:
         run: |
           STATUS=$(curl -s https://api.dev.gprod.build.infra.gyber.org/api/v1/health | jq -r .status)
           if [[ "$STATUS" != "ok" ]]; then exit 1; fi
+      - name: Telegram Notify (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            ✅ Периодический healthcheck: всё ОК!
+            Репозиторий: ${{ github.repository }}
+            Подробнее: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
       - name: Telegram Notify (Failure)
         if: failure()
         uses: appleboy/telegram-action@master

@@ -11,7 +11,7 @@ const ADMIN_EMAIL = 'admin_users_update@test.com';
 const ADMIN_PASSWORD = 'admin123';
 
 const USER_USERNAME = 'user_users_update';
-const USER_EMAIL = 'user_users_update@test.com'; 
+const USER_EMAIL = 'user_users_update@test.com';
 const USER_PASSWORD = 'user123';
 
 describe('Users update/soft-delete (e2e)', () => {
@@ -26,7 +26,7 @@ describe('Users update/soft-delete (e2e)', () => {
       imports: [AppModule],
     }).compile();
     app = moduleFixture.createNestApplication();
-    
+
     // Сбросим базу полностью перед началом тестирования
     await setupE2EApp(app, false);
 
@@ -34,22 +34,22 @@ describe('Users update/soft-delete (e2e)', () => {
     console.log('Регистрируем админа:', ADMIN_USERNAME);
     const regAdmin = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ 
-        username: ADMIN_USERNAME, 
-        email: ADMIN_EMAIL, 
-        password: ADMIN_PASSWORD, 
-        roles: ['admin'] 
+      .send({
+        username: ADMIN_USERNAME,
+        email: ADMIN_EMAIL,
+        password: ADMIN_PASSWORD,
+        roles: ['admin'],
       });
     expect(regAdmin.status).toBe(201);
     console.log('Регистрация админа успешна:', regAdmin.body);
-    
+
     // Логиним админа
     console.log('Логиним админа:', ADMIN_USERNAME);
     const loginAdmin = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ 
-        username: ADMIN_USERNAME, 
-        password: ADMIN_PASSWORD 
+      .send({
+        username: ADMIN_USERNAME,
+        password: ADMIN_PASSWORD,
       });
     expect(loginAdmin.status).toBe(200);
     expect(loginAdmin.body.access_token).toBeDefined();
@@ -60,21 +60,21 @@ describe('Users update/soft-delete (e2e)', () => {
     console.log('Регистрируем пользователя:', USER_USERNAME);
     const regUser = await request(app.getHttpServer())
       .post('/api/v1/auth/register')
-      .send({ 
-        username: USER_USERNAME, 
-        email: USER_EMAIL, 
-        password: USER_PASSWORD
+      .send({
+        username: USER_USERNAME,
+        email: USER_EMAIL,
+        password: USER_PASSWORD,
       });
     expect(regUser.status).toBe(201);
     console.log('Регистрация пользователя успешна:', regUser.body);
-    
+
     // Логиним пользователя
     console.log('Логиним пользователя:', USER_USERNAME);
     const loginUser = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ 
-        username: USER_USERNAME, 
-        password: USER_PASSWORD 
+      .send({
+        username: USER_USERNAME,
+        password: USER_PASSWORD,
       });
     expect(loginUser.status).toBe(200);
     expect(loginUser.body.access_token).toBeDefined();
@@ -87,28 +87,34 @@ describe('Users update/soft-delete (e2e)', () => {
       .get('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`);
     expect(users.status).toBe(200);
-    
+
     console.log('Список пользователей:', JSON.stringify(users.body));
-    
+
     const usersArr = users.body.data ?? users.body;
     if (!Array.isArray(usersArr)) {
       console.error('users.body:', users.body);
       throw new Error('usersArr is not array');
     }
-    
+
     const adminUser = usersArr.find((u: any) => u.username === ADMIN_USERNAME);
     if (!adminUser) {
-      throw new Error(`Админ ${ADMIN_USERNAME} не найден в списке пользователей`);
+      throw new Error(
+        `Админ ${ADMIN_USERNAME} не найден в списке пользователей`,
+      );
     }
     adminId = adminUser.id;
-    
+
     const foundUser = usersArr.find((u: any) => u.username === USER_USERNAME);
     if (!foundUser) {
-      throw new Error(`Пользователь ${USER_USERNAME} не найден в списке пользователей`);
+      throw new Error(
+        `Пользователь ${USER_USERNAME} не найден в списке пользователей`,
+      );
     }
-    
+
     userId = foundUser.id;
-    console.log(`Начинаем тестирование с user ID: ${userId}, admin ID: ${adminId}`);
+    console.log(
+      `Начинаем тестирование с user ID: ${userId}, admin ID: ${adminId}`,
+    );
   });
 
   it('user может обновить свой email', async () => {
@@ -116,17 +122,20 @@ describe('Users update/soft-delete (e2e)', () => {
     const getUserBefore = await request(app.getHttpServer())
       .get(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    
-    console.log(`Текущий email пользователя ${userId}:`, getUserBefore.body.email);
-    
+
+    console.log(
+      `Текущий email пользователя ${userId}:`,
+      getUserBefore.body.email,
+    );
+
     // Обновляем email
     const res = await request(app.getHttpServer())
       .patch(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${userToken}`)
       .send({ email: 'new_' + USER_EMAIL });
-    
+
     console.log('Результат обновления email:', res.status, res.body);
-    
+
     expect(res.status).toBe(200);
     expect(res.body.email).toBe('new_' + USER_EMAIL);
   });
@@ -136,9 +145,13 @@ describe('Users update/soft-delete (e2e)', () => {
       .patch(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${userToken}`)
       .send({ roles: ['admin'] });
-    
-    console.log('Результат попытки обновления ролей пользователем:', res.status, res.body);
-    
+
+    console.log(
+      'Результат попытки обновления ролей пользователем:',
+      res.status,
+      res.body,
+    );
+
     expect(res.status).toBe(403);
   });
 
@@ -147,9 +160,9 @@ describe('Users update/soft-delete (e2e)', () => {
       .patch(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ roles: ['admin'] });
-    
+
     console.log('Результат обновления ролей админом:', res.status, res.body);
-    
+
     expect(res.status).toBe(200);
     expect(res.body.roles).toContain('admin');
   });
@@ -158,17 +171,21 @@ describe('Users update/soft-delete (e2e)', () => {
     const res = await request(app.getHttpServer())
       .delete(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    
+
     console.log('Результат удаления пользователя:', res.status, res.body);
-    
+
     expect(res.status).toBe(200);
-    
+
     const user = await request(app.getHttpServer())
       .get(`/api/v1/users/${userId}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    
-    console.log('Проверка пользователя после удаления:', user.status, user.body);
-    
+
+    console.log(
+      'Проверка пользователя после удаления:',
+      user.status,
+      user.body,
+    );
+
     // Пользователь помечается как неактивный, поэтому findOne возвращает 404
     expect(user.status).toBe(404);
   });
@@ -179,16 +196,20 @@ describe('Users update/soft-delete (e2e)', () => {
     const projectRes = await request(app.getHttpServer())
       .post('/api/v1/projects')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ 
-        title: 'project-for-deletion-test', 
+      .send({
+        title: 'project-for-deletion-test',
         description: 'desc for deletion test',
-        ownerId: adminId 
+        ownerId: adminId,
       });
-    
-    console.log('Результат создания проекта:', projectRes.status, projectRes.body);
-    
+
+    console.log(
+      'Результат создания проекта:',
+      projectRes.status,
+      projectRes.body,
+    );
+
     expect(projectRes.status).toBe(201);
-    
+
     const projectId = projectRes.body.id;
     console.log(`Создан проект с ID: ${projectId}`);
 
@@ -196,18 +217,22 @@ describe('Users update/soft-delete (e2e)', () => {
     const delRes = await request(app.getHttpServer())
       .delete(`/api/v1/users/${adminId}`)
       .set('Authorization', `Bearer ${adminToken}`);
-    
+
     console.log('Результат удаления админа:', delRes.status, delRes.body);
-    
+
     expect(delRes.status).toBe(200);
 
     // Проверяем, что проект остался, а владелец помечен как неактивный
     const getProject = await request(app.getHttpServer())
       .get(`/api/v1/projects/${projectId}`)
       .set('Authorization', `Bearer ${userToken}`);
-    
-    console.log('Проверка проекта после удаления владельца:', getProject.status, getProject.body);
-    
+
+    console.log(
+      'Проверка проекта после удаления владельца:',
+      getProject.status,
+      getProject.body,
+    );
+
     expect(getProject.status).toBe(200);
     // ID владельца сохраняется
     expect(getProject.body.ownerId).toBe(adminId);
@@ -218,4 +243,4 @@ describe('Users update/soft-delete (e2e)', () => {
   afterAll(async () => {
     await app.close();
   });
-}); 
+});
