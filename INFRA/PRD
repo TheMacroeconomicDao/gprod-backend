@@ -1,0 +1,553 @@
+
+# Пошаговый план развертывания GProd Backend в K3S
+## (с простыми объяснениями каждого шага)
+
+## ЭТАП 1. Подготовка инфраструктуры
+
+### Шаг 1: Создание структуры для Kubernetes-манифестов
+```bash
+# Локально в проекте
+mkdir -p k8s/dev
+# На сервере (при подключении через sshgm)
+mkdir -p /root/gprod-k8s/dev
+```
+
+**Объяснение:**
+> Здесь мы создаём папки для хранения YAML-файлов, которые описывают, как наше приложение будет работать в Kubernetes. Эти файлы называются "манифестами" - они говорят кластеру, какие компоненты нужно создать. 
+> 
+> Мы создаём эти папки и локально в нашем проекте (для хранения в Git), и на сервере (куда мы будем их загружать при деплое). Это как чертежи дома - нужно хранить копию у себя и на стройплощадке.
+
+### Шаг 2: Создание Secret для переменных окружения
+1. Подготовить .env.development для K8s:
+```bash
+# Использовать существующий скрипт
+pnpm auto:env:dev
+# Затем скопировать .env.development в папку k8s/dev
+cp .env.development k8s/dev/env.txt
+```
+
+**Объяснение:**
+> Наше приложение использует файл .env с паролями, ключами и настройками. В Kubernetes нельзя просто так использовать .env-файл - эти настройки нужно положить в специальный объект, который называется "Secret" (секрет).
+> 
+> Сначала мы запускаем уже существующий скрипт, который создаст .env.development со всеми нужными переменными. Затем копируем его в папку k8s/dev для дальнейшего использования.
+
+2. Создать манифест Secret:
+```yaml
+# k8s/dev/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gprod-backend-env
+  namespace: develop-gprod
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql://postgres:PASSWORD@postgres:5432/gprod?schema=public"
+  JWT_SECRET: "REPLACE_WITH_SECURE_SECRET"
+  # Другие переменные из .env.development
+```
+
+**Объяснение:**
+> Теперь создаём YAML-файл, описывающий секрет для Kubernetes. Это как сейф для хранения секретных данных:
+> - `apiVersion` и `kind` - говорят Kubernetes, что это за объект
+> - `metadata` - имя и пространство имён (как папка, где будет жить наш секрет)
+> - `stringData` - сами переменные окружения
+> 
+> В DATABASE_URL мы указываем, как подключаться к базе данных. Обрати внимание на имя хоста `postgres` - это имя сервиса в Kubernetes, который мы создадим позже.
+>
+> JWT_SECRET - это секретный ключ для подписи токенов авторизации. Его надо заменить на реальный криптостойкий ключ.
+
+## ЭТАП 2. Развертывание базы данных
+
+### Шаг 1: Создание манифеста для PostgreSQL
+```yaml
+# k8s/dev/postgres.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: develop-gprod
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres  # В продакшене использовать Secret
+        - name: POSTGRES_DB
+          value: gprod
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 8Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: develop-gprod
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgres
+```
+
+**Объяснение:**
+> Этот файл описывает, как запустить PostgreSQL (нашу базу данных) в кластере. Здесь два объекта:
+> 
+> 1. **StatefulSet** - специальный тип деплоймента для баз данных:
+>    - `replicas: 1` - запускаем только 1 копию (для dev-среды достаточно)
+>    - `image: postgres:15-alpine` - используем официальный Docker-образ PostgreSQL версии 15
+>    - `env` - задаём переменные окружения (имя пользователя, пароль, имя базы)
+>    - `volumeMounts` - говорим, куда внутри контейнера подключить постоянное хранилище
+>    - `volumeClaimTemplates` - просим 8 гигабайт постоянного хранилища для данных БД
+> 
+> 2. **Service** - создаёт внутренний адрес для доступа к базе:
+>    - `name: postgres` - это имя будет доступно как DNS-имя внутри кластера
+>    - `port: 5432` - стандартный порт PostgreSQL
+>    - `selector: app: postgres` - говорим, к каким подам подключаться (с меткой app=postgres)
+>
+> База данных должна быть StatefulSet, а не обычным Deployment, потому что ей нужно постоянно хранить данные даже при перезапусках.
+
+### Шаг 2: Применение манифеста базы данных
+```bash
+kubectl apply -f k8s/dev/postgres.yaml
+```
+
+**Объяснение:**
+> Эта команда отправляет наш манифест в кластер Kubernetes. После её выполнения:
+> 1. Создастся запрос на постоянное хранилище (8 ГБ)
+> 2. Кластер выделит место на диске одной из нод
+> 3. Запустится под с PostgreSQL
+> 4. Создастся внутренний сервис с именем "postgres"
+>
+> Это как отправить чертёж строителям и сказать "постройте это" - они прочитают инструкции и построят всё, что описано.
+
+## ЭТАП 3. Развертывание бэкенда
+
+### Шаг 1: Сборка и публикация Docker-образа
+```bash
+# Создание скрипта сборки (automation/k8s/build-push.sh)
+#!/bin/bash
+TAG=$(git rev-parse --short HEAD)
+docker build -f Dockerfile.prod -t gprod-backend:${TAG} .
+docker tag gprod-backend:${TAG} ghcr.io/gybernaty/gprod-backend:dev
+docker tag gprod-backend:${TAG} ghcr.io/gybernaty/gprod-backend:${TAG}
+docker push ghcr.io/gybernaty/gprod-backend:dev
+docker push ghcr.io/gybernaty/gprod-backend:${TAG}
+echo "Image pushed: ghcr.io/gybernaty/gprod-backend:${TAG}"
+```
+
+**Объяснение:**
+> Здесь мы создаём скрипт, который собирает наше приложение в Docker-образ и загружает его в реестр образов (GitHub Container Registry).
+> 
+> 1. `TAG=$(git rev-parse --short HEAD)` - получаем короткий ID текущего коммита в Git, чтобы использовать его как уникальную метку версии
+> 2. `docker build -f Dockerfile.prod -t gprod-backend:${TAG} .` - собираем Docker-образ из Dockerfile.prod
+> 3. `docker tag ...` - создаём две метки (тега) для нашего образа:
+>    - `ghcr.io/gybernaty/gprod-backend:dev` - всегда показывает на последнюю версию dev
+>    - `ghcr.io/gybernaty/gprod-backend:${TAG}` - конкретная версия по ID коммита
+> 4. `docker push ...` - загружаем образ в GitHub Container Registry
+> 
+> Это как собрать приложение, запаковать его в коробку с названием и версией, и отправить на склад, откуда его потом можно будет загрузить.
+
+### Шаг 2: Создание манифеста для бэкенда
+```yaml
+# k8s/dev/backend.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gprod-backend
+  namespace: develop-gprod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gprod-backend
+  template:
+    metadata:
+      labels:
+        app: gprod-backend
+    spec:
+      containers:
+      - name: backend
+        image: ghcr.io/gybernaty/gprod-backend:dev
+        ports:
+        - containerPort: 3000
+        envFrom:
+        - secretRef:
+            name: gprod-backend-env
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gprod-backend
+  namespace: develop-gprod
+spec:
+  ports:
+  - port: 80
+    targetPort: 3000
+  selector:
+    app: gprod-backend
+```
+
+**Объяснение:**
+> Этот файл описывает запуск нашего бэкенда в кластере. Снова есть два объекта:
+> 
+> 1. **Deployment** - контроллер для запуска бэкенда:
+>    - `replicas: 1` - запускаем 1 экземпляр (можно больше для масштабирования)
+>    - `image: ghcr.io/gybernaty/gprod-backend:dev` - используем образ из предыдущего шага
+>    - `ports: containerPort: 3000` - приложение слушает порт 3000
+>    - `envFrom: secretRef` - подключаем все переменные из секрета, созданного на этапе 1
+>    - `readinessProbe` - проверка готовности, Kubernetes будет обращаться по пути /health, чтобы узнать, запустилось ли приложение
+>    - `resources` - ограничения по ресурсам, чтобы приложение не съело всю память и CPU
+> 
+> 2. **Service** - создаёт внутренний адрес для доступа к бэкенду:
+>    - `port: 80` - внешний порт сервиса (стандартный HTTP)
+>    - `targetPort: 3000` - порт внутри контейнера (на котором работает наше приложение)
+>    - `selector: app: gprod-backend` - связывает с подами с меткой app=gprod-backend
+>
+> Бэкенд использует Deployment (а не StatefulSet), потому что он не хранит данные сам - всё хранится в базе.
+>
+> Service нужен, чтобы создать стабильный адрес для доступа к бэкенду внутри кластера и для Ingress.
+
+### Шаг 3: Создание Ingress
+```yaml
+# k8s/dev/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gprod-backend-ingress
+  namespace: develop-gprod
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-production"
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - api.dev.gprod.build.infra.gyber.org
+    secretName: gprod-dev-tls
+  rules:
+  - host: api.dev.gprod.build.infra.gyber.org
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: gprod-backend
+            port:
+              number: 80
+```
+
+**Объяснение:**
+> Ingress - это "входная дверь" для внешнего трафика в кластер. Он настраивает, как запросы из интернета попадают к нашему сервису.
+> 
+> - `annotations: cert-manager.io/cluster-issuer: "letsencrypt-production"` - просим автоматически получить SSL-сертификат от Let's Encrypt
+> - `ingressClassName: traefik` - используем Traefik как контроллер (он уже есть в кластере)
+> - `tls` - настройки для HTTPS:
+>   - `hosts` - для каких доменов запрашивать сертификаты
+>   - `secretName` - где хранить сертификаты
+> - `rules` - правила маршрутизации:
+>   - `host` - домен, на который будет отвечать наш бэкенд
+>   - `path: /` - все запросы по корневому пути
+>   - `service: name: gprod-backend` - направлять трафик на наш сервис
+>   - `port: number: 80` - на порт сервиса (который мы настроили в шаге 2)
+>
+> Это как настроить табличку на двери и указать: "Если кто-то приходит на адрес api.dev.gprod.build.infra.gyber.org, пропустить его к сервису gprod-backend".
+
+### Шаг 4: Применение манифестов бэкенда
+```bash
+kubectl apply -f k8s/dev/backend.yaml
+kubectl apply -f k8s/dev/ingress.yaml
+```
+
+**Объяснение:**
+> Эти команды отправляют наши манифесты в кластер. После их выполнения:
+> 1. Создастся Deployment, который запустит поды с нашим бэкендом
+> 2. Создастся Service, который даст внутренний доступ к бэкенду
+> 3. Создастся Ingress, который настроит внешний доступ и получит SSL-сертификат
+>
+> После этих команд наш бэкенд должен стать доступен из интернета по адресу https://api.dev.gprod.build.infra.gyber.org (после получения сертификата).
+
+## ЭТАП 4. Настройка CI/CD пайплайна
+
+### Шаг 1: Создание GitHub Actions workflow
+```yaml
+# .github/workflows/deploy-k8s.yml
+name: Deploy to K3S
+
+on:
+  push:
+    branches: [ dev ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.prod
+          push: true
+          tags: |
+            ghcr.io/gybernaty/gprod-backend:dev
+            ghcr.io/gybernaty/gprod-backend:${{ github.sha }}
+            
+      - name: Deploy to k3s
+        uses: appleboy/ssh-action@master
+        with:
+          host: 31.129.105.180
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /root/gprod-k8s/dev
+            # Обновить тег образа в backend.yaml
+            sed -i "s|image: ghcr.io/gybernaty/gprod-backend:.*|image: ghcr.io/gybernaty/gprod-backend:${{ github.sha }}|g" backend.yaml
+            kubectl apply -f .
+            kubectl rollout status deployment/gprod-backend -n develop-gprod
+```
+
+**Объяснение:**
+> Это файл настройки для GitHub Actions - он создаёт "конвейер", который автоматически собирает и публикует наше приложение при пуше в ветку dev.
+> 
+> - `on: push: branches: [ dev ]` - срабатывает только при пуше в ветку dev
+> - `paths-ignore` - не запускать, если меняются только документы (.md) или папка docs
+> 
+> Шаги в пайплайне:
+> 1. `Checkout code` - скачивает код из репозитория
+> 2. `Set up Docker Buildx` - настраивает инструмент для сборки Docker-образов
+> 3. `Login to GitHub Container Registry` - авторизуется в реестре образов
+> 4. `Build and push` - собирает и публикует образ с двумя тегами:
+>    - dev - всегда последняя версия
+>    - ${{ github.sha }} - конкретная версия по ID коммита
+> 5. `Deploy to k3s` - подключается по SSH к серверу и:
+>    - Меняет тег образа в файле backend.yaml на новый
+>    - Применяет все манифесты (`kubectl apply -f .`)
+>    - Ждёт, пока деплоймент успешно обновится
+>
+> Это как настроить робота, который сам собирает, упаковывает и отправляет наше приложение всякий раз, когда мы делаем изменения в коде.
+
+### Шаг 2: Настройка секретов в GitHub
+1. Добавить в репозиторий Secret с именем SSH_PRIVATE_KEY, содержащий приватный ключ для доступа к серверу
+
+**Объяснение:**
+> GitHub Actions нужен доступ к серверу, чтобы обновлять деплой. Для этого:
+> 
+> 1. Идём в настройки репозитория на GitHub
+> 2. Там есть раздел "Secrets and variables" → "Actions"
+> 3. Добавляем новый секрет с именем SSH_PRIVATE_KEY
+> 4. Вставляем туда содержимое приватного ключа SSH (тот же ключ, который используется для команды sshgm)
+>
+> Это как дать роботу ключ от сервера, чтобы он мог сам заходить и обновлять приложение.
+
+## ЭТАП 5. Интеграция с существующей автоматизацией
+
+### Шаг 1: Добавление скриптов для K8s
+```bash
+# automation/k8s/status.sh
+#!/bin/bash
+kubectl get all -n develop-gprod
+
+# automation/k8s/logs.sh
+#!/bin/bash
+kubectl logs -n develop-gprod -l app=gprod-backend
+
+# automation/k8s/deploy.sh
+#!/bin/bash
+kubectl apply -f k8s/dev/
+```
+
+**Объяснение:**
+> Создаём простые скрипты для удобной работы с k8s:
+> 
+> 1. `status.sh` - показывает статус всех ресурсов в нашем namespace
+> 2. `logs.sh` - показывает логи бэкенда (выбирает поды по метке app=gprod-backend)
+> 3. `deploy.sh` - применяет все манифесты из папки k8s/dev/
+>
+> Эти скрипты просто делают наиболее частые действия более удобными - это как создать быстрые кнопки для ежедневных задач.
+
+### Шаг 2: Обновление automation/run.sh
+```bash
+# Добавить в существующий скрипт новые команды
+case "$COMMAND" in
+  # Существующие команды...
+  
+  k8s-deploy)
+    echo "Deploying to k8s..."
+    bash automation/k8s/deploy.sh
+    ;;
+  k8s-status)
+    echo "Getting k8s status..."
+    bash automation/k8s/status.sh
+    ;;
+  k8s-logs)
+    echo "Getting k8s logs..."
+    bash automation/k8s/logs.sh
+    ;;
+esac
+```
+
+**Объяснение:**
+> Интегрируем наши новые k8s-скрипты в существующую систему автоматизации проекта.
+> 
+> В файле automation/run.sh есть конструкция case, которая определяет, какую команду выполнять. Мы добавляем туда три новые команды:
+> - `k8s-deploy` - для деплоя в k8s
+> - `k8s-status` - для проверки статуса
+> - `k8s-logs` - для просмотра логов
+>
+> Это позволяет использовать общий скрипт run.sh для всех операций, включая новые операции с k8s.
+
+### Шаг 3: Обновление package.json
+```json
+"scripts": {
+  // Существующие скрипты...
+  "auto:k8s:build": "bash automation/k8s/build-push.sh",
+  "auto:k8s:deploy": "bash automation/run.sh k8s-deploy",
+  "auto:k8s:status": "bash automation/run.sh k8s-status", 
+  "auto:k8s:logs": "bash automation/run.sh k8s-logs"
+}
+```
+
+**Объяснение:**
+> Добавляем новые команды npm/pnpm для работы с k8s.
+> 
+> Эти скрипты позволяют выполнять k8s-команды так же, как и другие команды проекта - через npm или pnpm:
+> - `pnpm auto:k8s:build` - собрать и опубликовать образ
+> - `pnpm auto:k8s:deploy` - деплоить в k8s
+> - `pnpm auto:k8s:status` - проверить статус
+> - `pnpm auto:k8s:logs` - посмотреть логи
+>
+> Это делает все команды согласованными и позволяет использовать одинаковый подход для всех операций.
+
+## ЭТАП 6. Первый деплой и проверка
+
+### Шаг 1: Ручной деплой (до настройки CI/CD)
+```bash
+# Сборка и публикация образа
+pnpm auto:k8s:build
+
+# Подключение к серверу
+sshgm
+
+# Применение манифестов
+cd /root/gprod-k8s/dev
+kubectl apply -f .
+```
+
+**Объяснение:**
+> Делаем первый деплой вручную, чтобы убедиться, что всё работает:
+> 
+> 1. Собираем и публикуем образ нашего приложения
+> 2. Подключаемся к серверу через SSH
+> 3. Применяем все манифесты (это создаст все нужные ресурсы в кластере)
+>
+> Этот первый деплой нужен, чтобы проверить, что всё настроено правильно, прежде чем доверять это автоматике.
+
+### Шаг 2: Проверка работоспособности
+```bash
+# Проверка статуса подов
+kubectl get pods -n develop-gprod
+
+# Проверка логов
+kubectl logs -n develop-gprod -l app=gprod-backend
+
+# Проверка доступности API
+curl -k https://api.dev.gprod.build.infra.gyber.org/health
+```
+
+**Объяснение:**
+> Проверяем, что всё запустилось и работает:
+> 
+> 1. `kubectl get pods` - показывает список запущенных контейнеров и их статус
+> 2. `kubectl logs` - показывает логи нашего приложения (что оно пишет в консоль)
+> 3. `curl -k https://...` - проверяет, доступен ли наш API извне по HTTPS
+>    - `-k` отключает проверку сертификата (полезно, если сертификат ещё не получен)
+>    - `/health` - это эндпоинт, который должен ответить, что сервис работает
+>
+> Это как проверить, что дом построен, в нём горит свет, и дверь открывается.
+
+### Шаг 3: Проверка получения сертификатов
+```bash
+kubectl get certificate -n develop-gprod
+```
+
+**Объяснение:**
+> Проверяем, что SSL-сертификаты для HTTPS получены успешно:
+> 
+> `kubectl get certificate` - показывает статус сертификатов, запрошенных через cert-manager
+> 
+> Сертификаты должны быть в статусе Ready. Если они ещё в процессе получения, можно подождать несколько минут.
+>
+> Это важно для безопасности - сертификат подтверждает, что это действительно наш сайт, и шифрует соединение.
+
+## ЭТАП 7. Документирование
+
+1. Обновить README.md с инструкциями по деплою
+2. Создать docs/k8s/README.md с деталями о Kubernetes деплое
+3. Обновить INFRA.md с информацией о новом проекте
+
+**Объяснение:**
+> Документация важна, чтобы все (включая нас в будущем) понимали, как система устроена:
+> 
+> 1. Основной README.md - добавить секцию про деплой в k8s
+> 2. Создать отдельный файл docs/k8s/README.md с подробностями о настройке k8s
+> 3. Обновить INFRA.md, добавив наш проект в общую картину инфраструктуры
+>
+> Хорошая документация - это как карта и инструкция к дому. Без неё через месяц мы сами можем не вспомнить, как всё устроено и почему именно так.
+
+---
+
+После выполнения всех этих шагов наш бэкенд будет развёрнут в k3s, доступен по HTTPS, и будет автоматически обновляться при каждом пуше в ветку dev. Мы также сможем легко проверять его статус, смотреть логи и делать ручные обновления при необходимости.
