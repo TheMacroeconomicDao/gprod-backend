@@ -4,18 +4,18 @@ export const RATE_LIMIT_KEY = 'rate_limit';
 
 export enum RateLimitType {
   DEFAULT = 'default',
-  CRITICAL = 'critical',    // Для критичных операций (регистрация, логин)
-  NORMAL = 'normal',        // Для стандартных операций (CRUD)
-  READ = 'read',            // Для операций чтения
-  WRITE = 'write',          // Для операций записи
+  CRITICAL = 'critical', // Для критичных операций (регистрация, логин)
+  NORMAL = 'normal', // Для стандартных операций (CRUD)
+  READ = 'read', // Для операций чтения
+  WRITE = 'write', // Для операций записи
 }
 
 export interface RateLimitOptions {
-  limit: number;           // Максимальное количество запросов
-  ttlSeconds: number;      // Период сброса лимита в секундах
-  type?: RateLimitType;    // Тип ограничения
+  limit: number; // Максимальное количество запросов
+  ttlSeconds: number; // Период сброса лимита в секундах
+  type?: RateLimitType; // Тип ограничения
   blockMultiplier?: number; // Множитель времени блокировки при превышении лимита
-  weight?: number;         // Вес запроса (некоторые запросы могут считаться за несколько)
+  weight?: number; // Вес запроса (некоторые запросы могут считаться за несколько)
 }
 
 /**
@@ -36,7 +36,7 @@ export function RateLimit(
     blockMultiplier: options?.blockMultiplier || 2,
     weight: options?.weight || 1,
   };
-  
+
   return SetMetadata(RATE_LIMIT_KEY, rateLimitOptions);
 }
 

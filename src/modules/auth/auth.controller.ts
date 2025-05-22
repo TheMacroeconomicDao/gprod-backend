@@ -90,7 +90,12 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'JWT токен',
-    schema: { example: { access_token: 'jwt.token.here', refresh_token: 'refresh.token.here' } },
+    schema: {
+      example: {
+        access_token: 'jwt.token.here',
+        refresh_token: 'refresh.token.here',
+      },
+    },
   })
   @ApiUnauthorizedResponse({
     description: 'Неверные креды',
@@ -130,9 +135,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Выход из системы (логаут) и отзыв токена' })
   @CriticalRateLimit(10, 60)
   @ApiBearerAuth()
-  @ApiBody({ 
+  @ApiBody({
     type: RefreshTokenDto,
-    description: 'Refresh токен для отзыва'
+    description: 'Refresh токен для отзыва',
   })
   @ApiResponse({
     status: 200,
@@ -146,12 +151,15 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   @HttpCode(200)
-  async logout(@Request() req: ExpressRequest, @Body('refresh_token') refresh_token: string) {
+  async logout(
+    @Request() req: ExpressRequest,
+    @Body('refresh_token') refresh_token: string,
+  ) {
     const user = req.user as { id: number } | undefined;
     if (!user || !user.id) throw new Error('No user in request');
-    
+
     await this.authService.logout(user.id, refresh_token);
-    
+
     return { message: 'Logout successful' };
   }
 }

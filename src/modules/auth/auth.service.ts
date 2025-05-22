@@ -47,15 +47,19 @@ export class AuthService {
       username: user.username,
       roles: user.roles,
     };
-    
+
     // Генерируем токены
-    const access_token = await this.jwtService.signAsync(payload, { expiresIn: '15m' });
-    const refresh_token = await this.jwtService.signAsync(payload, { expiresIn: '7d' });
-    
+    const access_token = await this.jwtService.signAsync(payload, {
+      expiresIn: '15m',
+    });
+    const refresh_token = await this.jwtService.signAsync(payload, {
+      expiresIn: '7d',
+    });
+
     // Сохраняем refresh токен в БД
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // Срок действия 7 дней
-    
+
     await this.prisma.refreshToken.create({
       data: {
         token: refresh_token,
@@ -93,14 +97,14 @@ export class AuthService {
 
       // Проверяем JWT
       const payload = await this.jwtService.verifyAsync(refreshToken);
-      
+
       // Генерируем новый access токен
       const { sub, username, roles } = payload;
       const new_access_token = await this.jwtService.signAsync(
         { sub, username, roles },
         { expiresIn: '15m' },
       );
-      
+
       return { access_token: new_access_token };
     } catch (e) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -110,9 +114,9 @@ export class AuthService {
   async logout(userId: number, refreshToken: string) {
     // Удаляем конкретный refresh токен из БД
     return this.prisma.refreshToken.deleteMany({
-      where: { 
+      where: {
         userId,
-        token: refreshToken 
+        token: refreshToken,
       },
     });
   }

@@ -84,16 +84,16 @@ export class UsersService {
     console.log('[UsersService.update] id:', id, 'dto:', updateUserDto);
     try {
       await this.findOne(id);
-      
+
       // Если обновляется пароль, отзываем все токены
       if (updateUserDto.password) {
         // Хешируем пароль
         updateUserDto.password = await argon2.hash(updateUserDto.password);
-        
+
         // Отзываем все токены пользователя при смене пароля
         await this.prisma.refreshToken.deleteMany({ where: { userId: id } });
       }
-      
+
       return await this.prisma.user.update({
         where: { id },
         data: updateUserDto,
@@ -134,15 +134,15 @@ export class UsersService {
     try {
       // Проверяем существование пользователя
       await this.findOne(id);
-      
+
       // Хешируем новый пароль
       const hashedPassword = await argon2.hash(newPassword);
-      
+
       // Используем транзакцию для атомарного обновления пароля и удаления токенов
       return await this.prisma.$transaction(async (tx) => {
         // Отзываем все токены пользователя
         await tx.refreshToken.deleteMany({ where: { userId: id } });
-        
+
         // Обновляем пароль
         return tx.user.update({
           where: { id },
