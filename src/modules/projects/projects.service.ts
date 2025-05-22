@@ -9,7 +9,9 @@ export class ProjectsService {
 
   async create(createProjectDto: CreateProjectDto) {
     console.log('[ProjectsService.create] dto:', createProjectDto);
-    const owner = await this.prisma.user.findUnique({ where: { id: createProjectDto.ownerId } });
+    const owner = await this.prisma.user.findUnique({
+      where: { id: createProjectDto.ownerId },
+    });
     if (!owner) throw new NotFoundException('Owner not found');
     return this.prisma.project.create({
       data: {
@@ -22,7 +24,16 @@ export class ProjectsService {
   }
 
   async findAll(page = 1, limit = 20, search?: string, sort?: string) {
-    console.log('[ProjectsService.findAll] page:', page, 'limit:', limit, 'search:', search, 'sort:', sort);
+    console.log(
+      '[ProjectsService.findAll] page:',
+      page,
+      'limit:',
+      limit,
+      'search:',
+      search,
+      'sort:',
+      sort,
+    );
     const where: any = {};
     if (search) {
       where.OR = [
@@ -48,13 +59,21 @@ export class ProjectsService {
       }),
       this.prisma.project.count({ where }),
     ]);
-    console.log('[ProjectsService.findAll] found:', data.length, 'total:', total);
+    console.log(
+      '[ProjectsService.findAll] found:',
+      data.length,
+      'total:',
+      total,
+    );
     return { data, total };
   }
 
   async findOne(id: number) {
     console.log('[ProjectsService.findOne] id:', id);
-    const project = await this.prisma.project.findUnique({ where: { id }, include: { owner: true } });
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+      include: { owner: true },
+    });
     if (!project) throw new NotFoundException('Project not found');
     return project;
   }
@@ -64,11 +83,17 @@ export class ProjectsService {
     await this.findOne(id);
     const data: any = { ...updateProjectDto };
     if (updateProjectDto.ownerId) {
-      const owner = await this.prisma.user.findUnique({ where: { id: updateProjectDto.ownerId } });
+      const owner = await this.prisma.user.findUnique({
+        where: { id: updateProjectDto.ownerId },
+      });
       if (!owner) throw new NotFoundException('Owner not found');
       data.owner = { connect: { id: updateProjectDto.ownerId } };
     }
-    return this.prisma.project.update({ where: { id }, data, include: { owner: true } });
+    return this.prisma.project.update({
+      where: { id },
+      data,
+      include: { owner: true },
+    });
   }
 
   async remove(id: number) {
@@ -78,7 +103,10 @@ export class ProjectsService {
       await this.findOne(id);
       // Удаляем проект
       await this.prisma.project.delete({ where: { id } });
-      console.log('[ProjectsService.remove] project deleted successfully, id:', id);
+      console.log(
+        '[ProjectsService.remove] project deleted successfully, id:',
+        id,
+      );
       return { success: true };
     } catch (err) {
       console.error('[ProjectsService.remove] error:', err);

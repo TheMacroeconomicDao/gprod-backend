@@ -35,7 +35,9 @@ describe('UsersController', () => {
     const dto = { username: 'a', email: 'b', password: 'c' };
     (service.create as jest.Mock).mockResolvedValue(dto);
     const req = { user: { roles: ['admin'] } };
-    await expect(controller.create(dto as any, req as any)).resolves.toEqual(dto);
+    await expect(controller.create(dto as any, req as any)).resolves.toEqual(
+      dto,
+    );
     expect(service.create).toBeCalledWith(dto);
   });
 
@@ -52,11 +54,13 @@ describe('UsersController', () => {
   it('update calls service.update', async () => {
     (service.update as jest.Mock).mockResolvedValue({ id: 1, username: 'x' });
     const req = { user: { roles: ['admin'] } };
-    await expect(controller.update('1', { username: 'x' } as any, req as any)).resolves.toEqual({ id: 1, username: 'x' });
+    await expect(
+      controller.update('1', { username: 'x' } as any, req as any),
+    ).resolves.toEqual({ id: 1, username: 'x' });
   });
 
   it('remove calls service.remove', async () => {
     (service.remove as jest.Mock).mockResolvedValue(undefined);
     await expect(controller.remove('1')).resolves.toBeUndefined();
   });
-}); 
+});

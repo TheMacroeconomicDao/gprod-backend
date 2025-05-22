@@ -14,8 +14,8 @@ import { SecurityService } from './security.service';
   imports: [
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-jwt-secret',
-      signOptions: { 
-        expiresIn: process.env.JWT_EXPIRES || '1h' 
+      signOptions: {
+        expiresIn: process.env.JWT_EXPIRES || '1h',
       },
     }),
   ],
@@ -26,4 +26,4 @@ import { SecurityService } from './security.service';
   ],
   exports: [SecurityService, JwtModule],
 })
-export class SecurityModule {} 
+export class SecurityModule {}

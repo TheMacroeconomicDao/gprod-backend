@@ -11,10 +11,10 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     // Генерируем уникальный идентификатор запроса
     const requestId = uuidv4();
     (request as any)['requestId'] = requestId;
-    
+
     // Замеряем время запроса
     const startTime = process.hrtime();
-    
+
     // Логируем начало запроса
     const startMessage = `Request started ${request.method} ${request.originalUrl}`;
     const startMeta = {
@@ -29,18 +29,20 @@ export class RequestLoggerMiddleware implements NestMiddleware {
       },
     };
     this.logger.debug(startMessage, 'RequestLogger', startMeta);
-    
+
     // Обработчик завершения запроса
     response.on('finish', () => {
       const duration = process.hrtime(startTime);
       const durationMs = Math.round(duration[0] * 1000 + duration[1] / 1e6);
-      
-      const userId = request.user ? (request.user as any).userId || (request.user as any).sub : undefined;
-      
+
+      const userId = request.user
+        ? (request.user as any).userId || (request.user as any).sub
+        : undefined;
+
       // Определяем уровень логирования в зависимости от статуса
       const statusCode = response.statusCode;
       const message = `Request completed ${request.method} ${request.originalUrl} ${statusCode} ${durationMs}ms`;
-      
+
       const meta = {
         requestId,
         method: request.method,
@@ -49,11 +51,11 @@ export class RequestLoggerMiddleware implements NestMiddleware {
         durationMs,
         contentLength: response.get('content-length'),
       };
-      
+
       if (userId) {
         (meta as any).userId = userId;
       }
-      
+
       if (statusCode >= 500) {
         this.logger.error(message, undefined, 'RequestLogger', meta);
       } else if (statusCode >= 400) {
@@ -62,7 +64,7 @@ export class RequestLoggerMiddleware implements NestMiddleware {
         this.logger.debug(message, 'RequestLogger', meta);
       }
     });
-    
+
     next();
   }
-} 
+}

@@ -33,37 +33,44 @@ export class EnvironmentService {
 
     // Получаем текущее окружение
     const nodeEnv = process.env.NODE_ENV || this.ENV_DEV;
-    
+
     // Формируем имена потенциальных .env файлов
     const envFile = `.env.${nodeEnv}`;
     const defaultEnvFile = '.env';
-    
+
     // Список файлов для проверки в порядке приоритета
     const envFiles = [
-      envFile,           // .env.development, .env.production, ...
-      defaultEnvFile,    // .env (обычно симлинк на активный контур)
+      envFile, // .env.development, .env.production, ...
+      defaultEnvFile, // .env (обычно симлинк на активный контур)
     ];
-    
+
     // Перебираем файлы и загружаем первый найденный
     for (const file of envFiles) {
       if (fs.existsSync(file)) {
-        console.log(`[EnvironmentService] Загружаем переменные окружения из ${file}`);
-        
+        console.log(
+          `[EnvironmentService] Загружаем переменные окружения из ${file}`,
+        );
+
         // Загружаем переменные из файла
         const result = dotenv.config({ path: file });
-        
+
         if (result.error) {
-          console.error(`[EnvironmentService] Ошибка при загрузке ${file}:`, result.error);
+          console.error(
+            `[EnvironmentService] Ошибка при загрузке ${file}:`,
+            result.error,
+          );
           continue;
         }
-        
+
         // Устанавливаем флаг, что переменные уже загружены
         process.env.ENV_LOADED = 'true';
         return;
       }
     }
-    
-    console.warn(`[EnvironmentService] Ни один из .env файлов не найден (искали: ${envFiles.join(', ')})`);
+
+    console.warn(
+      `[EnvironmentService] Ни один из .env файлов не найден (искали: ${envFiles.join(', ')})`,
+    );
   }
 
   /**
@@ -112,7 +119,7 @@ export class EnvironmentService {
     } catch (e) {
       // Игнорируем ошибки
     }
-    
+
     return process.env.RUNNING_IN_DOCKER === 'true';
   }
 
@@ -124,31 +131,31 @@ export class EnvironmentService {
     if (cacheKey in this.cache) {
       return this.cache[cacheKey] as string;
     }
-    
+
     const value = process.env[key];
-    
+
     if (value !== undefined) {
       this.cache[cacheKey] = value;
       return value;
     }
-    
+
     if (defaultValue !== undefined) {
       return defaultValue;
     }
-    
+
     return '';
   }
-  
+
   /**
    * Получает обязательное строковое значение, выбрасывает ошибку если отсутствует
    */
   getStringOrThrow(key: string): string {
     const value = this.getString(key);
-    
+
     if (!value) {
       throw new Error(`Обязательная переменная окружения ${key} не задана`);
     }
-    
+
     return value;
   }
 
@@ -160,19 +167,19 @@ export class EnvironmentService {
     if (cacheKey in this.cache) {
       return this.cache[cacheKey] as number;
     }
-    
+
     const stringValue = this.getString(key, defaultValue?.toString());
-    
+
     if (!stringValue) {
       return defaultValue ?? 0;
     }
-    
+
     const num = Number(stringValue);
-    
+
     if (isNaN(num)) {
       return defaultValue ?? 0;
     }
-    
+
     this.cache[cacheKey] = num;
     return num;
   }
@@ -185,10 +192,10 @@ export class EnvironmentService {
     if (cacheKey in this.cache) {
       return this.cache[cacheKey] as boolean;
     }
-    
+
     const value = this.getString(key, defaultValue ? 'true' : 'false');
     const boolValue = value === 'true' || value === '1' || value === 'yes';
-    
+
     this.cache[cacheKey] = boolValue;
     return boolValue;
   }
@@ -201,18 +208,18 @@ export class EnvironmentService {
     if (cacheKey in this.cache) {
       return this.cache[cacheKey] as string[];
     }
-    
+
     const value = this.getString(key, defaultValue.join(','));
-    
+
     if (!value && defaultValue.length > 0) {
       return defaultValue;
     }
-    
+
     const result = value
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    
+
     this.cache[cacheKey] = result;
     return result;
   }
@@ -223,22 +230,24 @@ export class EnvironmentService {
   getPort(): number {
     // Получаем порт из переменных окружения с более строгой проверкой
     const portFromEnv = process.env.PORT;
-    
+
     if (portFromEnv) {
       const parsedPort = parseInt(portFromEnv, 10);
       if (!isNaN(parsedPort) && parsedPort > 0 && parsedPort < 65536) {
-        return parsedPort; 
+        return parsedPort;
       }
-      console.warn(`[EnvironmentService] Некорректное значение PORT: "${portFromEnv}"`);
+      console.warn(
+        `[EnvironmentService] Некорректное значение PORT: "${portFromEnv}"`,
+      );
     }
-    
+
     // Пробуем получить порт через getNumber
     const envPort = this.getNumber('PORT');
-    
+
     if (envPort > 0 && envPort < 65536) {
       return envPort;
     }
-    
+
     // Используем порты по умолчанию в зависимости от окружения
     if (this.isDevelopment) {
       return 3008;
@@ -249,7 +258,7 @@ export class EnvironmentService {
     } else if (this.isTest) {
       return 3009;
     }
-    
+
     return 3000;
   }
 
@@ -259,4 +268,4 @@ export class EnvironmentService {
   clearCache(): void {
     this.cache = {};
   }
-} 
+}

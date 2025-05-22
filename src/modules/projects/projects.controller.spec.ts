@@ -50,7 +50,9 @@ describe('ProjectsController', () => {
 
   it('update calls service.update', async () => {
     (service.update as jest.Mock).mockResolvedValue({ id: 1, name: 'x' });
-    await expect(controller.update('1', { name: 'x' } as any)).resolves.toEqual({ id: 1, name: 'x' });
+    await expect(controller.update('1', { name: 'x' } as any)).resolves.toEqual(
+      { id: 1, name: 'x' },
+    );
   });
 
   it('remove calls service.remove', async () => {
@@ -60,12 +62,14 @@ describe('ProjectsController', () => {
         sub: 1,
       },
     };
-    
+
     (service.findOne as jest.Mock).mockResolvedValue({ id: 1, ownerId: 1 });
     (service.remove as jest.Mock).mockResolvedValue({ success: true });
-    
-    await expect(controller.remove('1', mockReq)).resolves.toEqual({ success: true });
+
+    await expect(controller.remove('1', mockReq)).resolves.toEqual({
+      success: true,
+    });
     expect(service.findOne).toBeCalledWith(1);
     expect(service.remove).toBeCalledWith(1);
   });
-}); 
+});

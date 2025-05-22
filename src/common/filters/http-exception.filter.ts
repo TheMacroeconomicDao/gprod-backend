@@ -1,4 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 import { WinstonLogger } from '../logger/winston.logger';
 
@@ -44,41 +50,43 @@ export class HttpExceptionFilter implements ExceptionFilter {
     };
 
     // Логируем ошибки разного уровня в зависимости от статуса
-    const userId = request.user ? (request.user as any).userId || (request.user as any).sub : undefined;
+    const userId = request.user
+      ? (request.user as any).userId || (request.user as any).sub
+      : undefined;
     const userContext = userId ? { userId } : {};
     const requestId = (request as any)['requestId'] || '-';
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        `[${request.method}] ${request.url} ${status}`, 
-        stack, 
+        `[${request.method}] ${request.url} ${status}`,
+        stack,
         'HttpException',
-        { 
-          ...errorResponse, 
-          ...userContext, 
+        {
+          ...errorResponse,
+          ...userContext,
           ip: request.ip,
-          requestId
-        }
+          requestId,
+        },
       );
     } else if (status >= HttpStatus.BAD_REQUEST) {
       this.logger.warn(
-        `[${request.method}] ${request.url} ${status}`, 
+        `[${request.method}] ${request.url} ${status}`,
         'HttpException',
-        { 
-          ...errorResponse, 
-          ...userContext, 
+        {
+          ...errorResponse,
+          ...userContext,
           ip: request.ip,
-          requestId
-        }
+          requestId,
+        },
       );
     } else {
       this.logger.debug(
-        `[${request.method}] ${request.url} ${status}`, 
+        `[${request.method}] ${request.url} ${status}`,
         'HttpException',
-        { ...errorResponse, requestId }
+        { ...errorResponse, requestId },
       );
     }
-    
+
     response.status(status).json(errorResponse);
   }
-} 
+}

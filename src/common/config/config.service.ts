@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { AppConfig, appConfig, createAppConfig, refreshConfig } from './app.config';
+import {
+  AppConfig,
+  appConfig,
+  createAppConfig,
+  refreshConfig,
+} from './app.config';
 import { EnvHelper } from '../helpers/env.helper';
 
 /**
@@ -98,4 +103,4 @@ export class ConfigService {
   get isTest(): boolean {
     return EnvHelper.isTest;
   }
-} 
+}

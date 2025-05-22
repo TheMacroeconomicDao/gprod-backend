@@ -15,4 +15,4 @@ import { ConfigModule } from '../config/config.module';
   ],
   exports: [WinstonLogger],
 })
-export class LoggerModule {} 
+export class LoggerModule {}

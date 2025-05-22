@@ -6,4 +6,4 @@ import { PrismaModule } from '../../common/prisma.module';
   imports: [PrismaModule],
   controllers: [HealthController],
 })
-export class HealthModule {} 
+export class HealthModule {}

@@ -41,14 +41,24 @@ describe('AuthService', () => {
   });
 
   it('login включает roles в payload', async () => {
-    const user = { id: 1, username: 'vasya', password: 'hash', roles: ['admin'] };
+    const user = {
+      id: 1,
+      username: 'vasya',
+      password: 'hash',
+      roles: ['admin'],
+    };
     service.validateUser = jest.fn().mockResolvedValue(user);
     const jwtService = module.get<JwtService>(JwtService);
-    jest.spyOn(jwtService, 'signAsync')
+    jest
+      .spyOn(jwtService, 'signAsync')
       .mockResolvedValueOnce('token')
       .mockResolvedValueOnce('refresh');
     const result = await service.login('vasya', 'qwerty');
-    expect(jwtService.signAsync).toHaveBeenCalledWith({ sub: 1, username: 'vasya', roles: ['admin'] });
+    expect(jwtService.signAsync).toHaveBeenCalledWith({
+      sub: 1,
+      username: 'vasya',
+      roles: ['admin'],
+    });
     expect(result).toEqual({ access_token: 'token', refresh_token: 'refresh' });
   });
 });

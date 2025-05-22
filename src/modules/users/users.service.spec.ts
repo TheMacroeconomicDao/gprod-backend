@@ -7,7 +7,7 @@ describe('UsersService', () => {
 
   beforeEach(() => {
     prisma = new PrismaClient();
-    service = new UsersService(prisma as any);
+    service = new UsersService(prisma);
     // @ts-ignore
     service.prisma = prisma;
     prisma.user.findFirst = jest.fn();
@@ -41,12 +41,17 @@ describe('UsersService', () => {
   it('update calls prisma.user.update', async () => {
     prisma.user.findFirst = jest.fn().mockResolvedValue({ id: 1 });
     prisma.user.update = jest.fn().mockResolvedValue({ id: 1, username: 'x' });
-    await expect(service.update(1, { username: 'x' } as any)).resolves.toEqual({ id: 1, username: 'x' });
+    await expect(service.update(1, { username: 'x' } as any)).resolves.toEqual({
+      id: 1,
+      username: 'x',
+    });
   });
 
   it('remove calls prisma.user.update (soft-delete)', async () => {
     prisma.user.findFirst = jest.fn().mockResolvedValue({ id: 1 });
-    prisma.user.update = jest.fn().mockResolvedValue({ id: 1, isActive: false });
+    prisma.user.update = jest
+      .fn()
+      .mockResolvedValue({ id: 1, isActive: false });
     await expect(service.remove(1)).resolves.toEqual({ success: true });
   });
 
@@ -63,4 +68,4 @@ describe('UsersService', () => {
   afterAll(async () => {
     await prisma.$disconnect();
   });
-}); 
+});

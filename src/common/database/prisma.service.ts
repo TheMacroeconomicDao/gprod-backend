@@ -1,4 +1,9 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  OnModuleInit,
+  OnModuleDestroy,
+  Logger,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 /**
@@ -6,7 +11,10 @@ import { PrismaClient } from '@prisma/client';
  * и обеспечения интеграции с жизненным циклом NestJS
  */
 @Injectable()
-export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaService
+  extends PrismaClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger = new Logger(PrismaService.name);
 
   constructor() {
@@ -19,7 +27,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       ],
     });
   }
-  
+
   /**
    * Подключение к базе данных при инициализации модуля
    */
@@ -27,21 +35,21 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.logger.log('Connecting to database...');
     await this.$connect();
     this.logger.log('Database connection established');
-    
+
     // Опционально: добавление middleware для логирования запросов
     this.$use(async (params, next) => {
       const before = Date.now();
       const result = await next(params);
       const after = Date.now();
-      
+
       this.logger.debug(
-        `${params.model}.${params.action} took ${after - before}ms`
+        `${params.model}.${params.action} took ${after - before}ms`,
       );
-      
+
       return result;
     });
   }
-  
+
   /**
    * Отключение от базы данных при завершении работы модуля
    */
@@ -50,7 +58,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     await this.$disconnect();
     this.logger.log('Database disconnected');
   }
-  
+
   /**
    * Проверка здоровья соединения с базой данных
    * @returns true если соединение работает, иначе false
@@ -64,4 +72,4 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       return false;
     }
   }
-} 
+}

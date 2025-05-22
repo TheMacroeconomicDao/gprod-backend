@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -12,8 +16,12 @@ export class AuthService {
   ) {}
 
   async register(createUserDto: CreateUserDto) {
-    const existingUser = await this.usersService.findByUsername(createUserDto.username);
-    const existingEmail = await this.usersService.findByEmail(createUserDto.email);
+    const existingUser = await this.usersService.findByUsername(
+      createUserDto.username,
+    );
+    const existingEmail = await this.usersService.findByEmail(
+      createUserDto.email,
+    );
     if (existingUser || existingEmail) {
       throw new ConflictException('User already exists');
     }
@@ -30,12 +38,18 @@ export class AuthService {
   }
 
   async login(username: string, password: string) {
-    const user = await this.validateUser(username, password) as any;
+    const user = await this.validateUser(username, password);
     if (!user) throw new UnauthorizedException('Invalid credentials');
-    const payload = { sub: user.id, username: user.username, roles: user.roles };
+    const payload = {
+      sub: user.id,
+      username: user.username,
+      roles: user.roles,
+    };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      refresh_token: await this.jwtService.signAsync(payload, { expiresIn: '7d' }),
+      refresh_token: await this.jwtService.signAsync(payload, {
+        expiresIn: '7d',
+      }),
     };
   }
 
@@ -45,7 +59,10 @@ export class AuthService {
       const payload = await this.jwtService.verifyAsync(refreshToken);
       // Можно добавить проверку в базе, если нужно
       const { sub, username, roles } = payload;
-      const new_access_token = await this.jwtService.signAsync({ sub, username, roles }, { expiresIn: '15m' });
+      const new_access_token = await this.jwtService.signAsync(
+        { sub, username, roles },
+        { expiresIn: '15m' },
+      );
       return { access_token: new_access_token };
     } catch (e) {
       throw new UnauthorizedException('Invalid refresh token');

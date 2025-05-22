@@ -55,17 +55,17 @@ export function createAppConfig(): AppConfig {
   const isProd = EnvHelper.isProduction;
   const isStage = EnvHelper.isStaging;
   const isTest = EnvHelper.isTest;
-  
+
   // Настройки приложения
   const appEnv = EnvHelper.environment;
   const appPort = EnvHelper.getPort();
   const appHost = EnvHelper.get('HOST', 'localhost');
-  const appDomain = isProd 
+  const appDomain = isProd
     ? EnvHelper.get('DOMAIN', 'gprod.com')
-    : isStage 
-      ? EnvHelper.get('DOMAIN', 'stage.gprod.com') 
+    : isStage
+      ? EnvHelper.get('DOMAIN', 'stage.gprod.com')
       : `${appHost}:${appPort}`;
-      
+
   // Настройки для CORS
   const corsOrigin = EnvHelper.array('CORS_ORIGIN', [
     'http://localhost:3000',
@@ -85,8 +85,8 @@ export function createAppConfig(): AppConfig {
       domain: appDomain,
       baseUrl: isProd
         ? `https://${appDomain}`
-        : isStage 
-          ? `https://${appDomain}` 
+        : isStage
+          ? `https://${appDomain}`
           : `http://${appHost}:${appPort}`,
     },
     logging: {
@@ -128,4 +128,4 @@ export const appConfig = createAppConfig();
 export function refreshConfig(): AppConfig {
   EnvHelper.clearCache();
   return createAppConfig();
-} 
+}

@@ -10,4 +10,4 @@ import { EnvironmentService } from './environment.service';
   providers: [EnvironmentService],
   exports: [EnvironmentService],
 })
-export class EnvironmentModule {} 
+export class EnvironmentModule {}

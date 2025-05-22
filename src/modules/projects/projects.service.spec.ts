@@ -19,8 +19,8 @@ describe('ProjectsService', () => {
     service = new ProjectsService(mockPrisma as any);
     // @ts-ignore
     service.prisma = mockPrisma;
-    Object.values(mockPrisma.user).forEach(fn => fn.mockReset());
-    Object.values(mockPrisma.project).forEach(fn => fn.mockReset());
+    Object.values(mockPrisma.user).forEach((fn) => fn.mockReset());
+    Object.values(mockPrisma.project).forEach((fn) => fn.mockReset());
   });
 
   it('should be defined', () => {
@@ -59,7 +59,10 @@ describe('ProjectsService', () => {
   it('update calls prisma.project.update', async () => {
     mockPrisma.project.findUnique.mockResolvedValue({ id: 1 });
     mockPrisma.project.update.mockResolvedValue({ id: 1, name: 'x' });
-    await expect(service.update(1, { name: 'x' } as any)).resolves.toEqual({ id: 1, name: 'x' });
+    await expect(service.update(1, { name: 'x' } as any)).resolves.toEqual({
+      id: 1,
+      name: 'x',
+    });
   });
 
   it('remove calls prisma.project.delete', async () => {
@@ -67,4 +70,4 @@ describe('ProjectsService', () => {
     mockPrisma.project.delete.mockResolvedValue(undefined);
     await expect(service.remove(1)).resolves.toEqual({ success: true });
   });
-}); 
+});

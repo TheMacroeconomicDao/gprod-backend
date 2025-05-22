@@ -18,7 +18,16 @@ export class UsersService {
   }
 
   async findAll(page = 1, limit = 20, search?: string, sort?: string) {
-    console.log('[UsersService.findAll] page:', page, 'limit:', limit, 'search:', search, 'sort:', sort);
+    console.log(
+      '[UsersService.findAll] page:',
+      page,
+      'limit:',
+      limit,
+      'search:',
+      search,
+      'sort:',
+      sort,
+    );
     const where: any = { isActive: true };
     if (search) {
       where.OR = [
@@ -43,7 +52,12 @@ export class UsersService {
         }),
         this.prisma.user.count({ where }),
       ]);
-      console.log('[UsersService.findAll] found:', data.length, 'total:', total);
+      console.log(
+        '[UsersService.findAll] found:',
+        data.length,
+        'total:',
+        total,
+      );
       return { data, total };
     } catch (err) {
       console.error('[UsersService.findAll] error:', err);
@@ -54,7 +68,9 @@ export class UsersService {
   async findOne(id: number) {
     console.log('[UsersService.findOne] id:', id);
     try {
-      const user = await this.prisma.user.findFirst({ where: { id, isActive: true } });
+      const user = await this.prisma.user.findFirst({
+        where: { id, isActive: true },
+      });
       if (!user) throw new NotFoundException('User not found');
       return user;
     } catch (err) {
@@ -67,7 +83,10 @@ export class UsersService {
     console.log('[UsersService.update] id:', id, 'dto:', updateUserDto);
     try {
       await this.findOne(id);
-      return await this.prisma.user.update({ where: { id }, data: updateUserDto });
+      return await this.prisma.user.update({
+        where: { id },
+        data: updateUserDto,
+      });
     } catch (err) {
       console.error('[UsersService.update] error:', err);
       throw err;
@@ -78,7 +97,10 @@ export class UsersService {
     console.log('[UsersService.remove] id:', id);
     try {
       await this.findOne(id);
-      await this.prisma.user.update({ where: { id }, data: { isActive: false } });
+      await this.prisma.user.update({
+        where: { id },
+        data: { isActive: false },
+      });
       return { success: true };
     } catch (err) {
       console.error('[UsersService.remove] error:', err);
