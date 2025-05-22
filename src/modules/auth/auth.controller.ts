@@ -20,13 +20,19 @@ import {
   ApiExtraModels,
   ApiInternalServerErrorResponse,
   ApiConflictResponse,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ApiErrorResponseDto } from '../../common/dto/api-error-response.dto';
-import { RateLimit } from '../../common/decorators/rate-limit.decorator';
+import { CriticalRateLimit } from '../../common/decorators/rate-limit.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 class LoginDto {
   username: string;
   password: string;
+}
+
+class RefreshTokenDto {
+  refresh_token: string;
 }
 
 @ApiTags('auth')
@@ -36,7 +42,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @ApiOperation({ summary: 'Регистрация пользователя (лимит 5 req/min)' })
-  @RateLimit(5, 60)
+  @CriticalRateLimit(5, 60)
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
     status: 201,
@@ -79,12 +85,12 @@ export class AuthController {
   @ApiOperation({
     summary: 'Логин пользователя (через Guard, лимит 10 req/min)',
   })
-  @RateLimit(10, 60)
+  @CriticalRateLimit(10, 60)
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
     description: 'JWT токен',
-    schema: { example: { access_token: 'jwt.token.here' } },
+    schema: { example: { access_token: 'jwt.token.here', refresh_token: 'refresh.token.here' } },
   })
   @ApiUnauthorizedResponse({
     description: 'Неверные креды',
@@ -104,14 +110,48 @@ export class AuthController {
   }
 
   @ApiOperation({ summary: 'Обновить access_token по refresh_token' })
-  @ApiBody({ schema: { example: { refresh_token: '...' } } })
+  @CriticalRateLimit(20, 60)
+  @ApiBody({ type: RefreshTokenDto })
   @ApiResponse({
     status: 200,
     description: 'Новый access_token',
     schema: { example: { access_token: '...' } },
   })
+  @ApiUnauthorizedResponse({
+    description: 'Неверный или истекший refresh токен',
+    type: ApiErrorResponseDto,
+  })
   @Post('refresh')
+  @HttpCode(200)
   refresh(@Body('refresh_token') refresh_token: string) {
     return this.authService.refresh(refresh_token);
+  }
+
+  @ApiOperation({ summary: 'Выход из системы (логаут) и отзыв токена' })
+  @CriticalRateLimit(10, 60)
+  @ApiBearerAuth()
+  @ApiBody({ 
+    type: RefreshTokenDto,
+    description: 'Refresh токен для отзыва'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Успешный выход из системы',
+    schema: { example: { message: 'Logout successful' } },
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Не авторизован',
+    type: ApiErrorResponseDto,
+  })
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  @HttpCode(200)
+  async logout(@Request() req: ExpressRequest, @Body('refresh_token') refresh_token: string) {
+    const user = req.user as { id: number } | undefined;
+    if (!user || !user.id) throw new Error('No user in request');
+    
+    await this.authService.logout(user.id, refresh_token);
+    
+    return { message: 'Logout successful' };
   }
 }

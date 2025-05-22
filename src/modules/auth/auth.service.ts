@@ -7,12 +7,14 @@ import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { PrismaService } from '../../common/database/prisma.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private prisma: PrismaService,
   ) {}
 
   async register(createUserDto: CreateUserDto) {
@@ -45,27 +47,80 @@ export class AuthService {
       username: user.username,
       roles: user.roles,
     };
+    
+    // Генерируем токены
+    const access_token = await this.jwtService.signAsync(payload, { expiresIn: '15m' });
+    const refresh_token = await this.jwtService.signAsync(payload, { expiresIn: '7d' });
+    
+    // Сохраняем refresh токен в БД
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // Срок действия 7 дней
+    
+    await this.prisma.refreshToken.create({
+      data: {
+        token: refresh_token,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
     return {
-      access_token: await this.jwtService.signAsync(payload),
-      refresh_token: await this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
-      }),
+      access_token,
+      refresh_token,
     };
   }
 
   async refresh(refreshToken: string) {
     try {
-      // TODO: Проверять refresh_token в базе и инвалидировать при логауте/смене пароля
+      // Проверяем refresh_token в базе
+      const tokenRecord = await this.prisma.refreshToken.findUnique({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+
+      if (!tokenRecord) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Проверяем срок действия
+      if (new Date() > tokenRecord.expiresAt) {
+        // Удаляем просроченный токен
+        await this.prisma.refreshToken.delete({
+          where: { id: tokenRecord.id },
+        });
+        throw new UnauthorizedException('Refresh token expired');
+      }
+
+      // Проверяем JWT
       const payload = await this.jwtService.verifyAsync(refreshToken);
-      // Можно добавить проверку в базе, если нужно
+      
+      // Генерируем новый access токен
       const { sub, username, roles } = payload;
       const new_access_token = await this.jwtService.signAsync(
         { sub, username, roles },
         { expiresIn: '15m' },
       );
+      
       return { access_token: new_access_token };
     } catch (e) {
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  async logout(userId: number, refreshToken: string) {
+    // Удаляем конкретный refresh токен из БД
+    return this.prisma.refreshToken.deleteMany({
+      where: { 
+        userId,
+        token: refreshToken 
+      },
+    });
+  }
+
+  async revokeAllUserTokens(userId: number) {
+    // Удаляем все refresh токены пользователя
+    return this.prisma.refreshToken.deleteMany({
+      where: { userId },
+    });
   }
 }

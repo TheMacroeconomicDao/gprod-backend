@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma.module';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as argon2 from 'argon2';
 
 @Injectable()
 export class UsersService {
@@ -83,6 +84,16 @@ export class UsersService {
     console.log('[UsersService.update] id:', id, 'dto:', updateUserDto);
     try {
       await this.findOne(id);
+      
+      // Если обновляется пароль, отзываем все токены
+      if (updateUserDto.password) {
+        // Хешируем пароль
+        updateUserDto.password = await argon2.hash(updateUserDto.password);
+        
+        // Отзываем все токены пользователя при смене пароля
+        await this.prisma.refreshToken.deleteMany({ where: { userId: id } });
+      }
+      
       return await this.prisma.user.update({
         where: { id },
         data: updateUserDto,
@@ -116,5 +127,31 @@ export class UsersService {
   async findByEmail(email: string) {
     console.log('[UsersService.findByEmail] email:', email);
     return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  async updatePassword(id: number, newPassword: string) {
+    console.log('[UsersService.updatePassword] id:', id);
+    try {
+      // Проверяем существование пользователя
+      await this.findOne(id);
+      
+      // Хешируем новый пароль
+      const hashedPassword = await argon2.hash(newPassword);
+      
+      // Используем транзакцию для атомарного обновления пароля и удаления токенов
+      return await this.prisma.$transaction(async (tx) => {
+        // Отзываем все токены пользователя
+        await tx.refreshToken.deleteMany({ where: { userId: id } });
+        
+        // Обновляем пароль
+        return tx.user.update({
+          where: { id },
+          data: { password: hashedPassword },
+        });
+      });
+    } catch (err) {
+      console.error('[UsersService.updatePassword] error:', err);
+      throw err;
+    }
   }
 }
