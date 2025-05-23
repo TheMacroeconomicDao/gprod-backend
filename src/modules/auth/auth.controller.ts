@@ -9,7 +9,7 @@ import {
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { Request as ExpressRequest } from 'express';
+import type { Request as ExpressRequest } from 'express';
 import {
   ApiBody,
   ApiTags,
