@@ -36,18 +36,8 @@ export class PrismaService
     await this.$connect();
     this.logger.log('Database connection established');
 
-    // Опционально: добавление middleware для логирования запросов
-    this.$use(async (params: Prisma.MiddlewareParams, next: (params: Prisma.MiddlewareParams) => Promise<any>) => {
-      const before = Date.now();
-      const result = await next(params);
-      const after = Date.now();
-
-      this.logger.debug(
-        `${params.model}.${params.action} took ${after - before}ms`,
-      );
-
-      return result;
-    });
+    // Middleware больше не поддерживается в Prisma 6.x
+    // Если нужно логирование, используйте встроенные опции log в конструкторе
   }
 
   /**

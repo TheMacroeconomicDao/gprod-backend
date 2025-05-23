@@ -60,7 +60,7 @@ export class WinstonLogger implements LoggerService {
     );
 
     // Транспорты для логгера
-    const transports: winston.transport[] = [];
+    const transports: any[] = [];
 
     // Добавляем консольный транспорт
     if (logToConsole) {
