@@ -1,3 +1,10 @@
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
 jest.setTimeout(30000);
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
@@ -132,11 +139,15 @@ describe('Forbidden/Unauthorized (e2e)', () => {
   });
 
   afterAll(async () => {
-    // Очищаем базу данных после тестов
-    await request(app.getHttpServer())
-      .delete(`/api/v1/projects/${projectId}`)
-      .set('Authorization', `Bearer ${token}`);
+    try {
+      // Очищаем базу данных после тестов
+      await request(app.getHttpServer())
+        .delete(`/api/v1/projects/${projectId}`)
+        .set('Authorization', `Bearer ${token}`);
 
-    await app.close();
+      await app.close();
+    } catch (err) {
+      console.error('Ошибка в afterAll:', err);
+    }
   });
 });

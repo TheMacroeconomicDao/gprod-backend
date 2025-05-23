@@ -3,6 +3,7 @@ import { PrismaService } from '../../common/prisma.module';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -139,7 +140,7 @@ export class UsersService {
       const hashedPassword = await argon2.hash(newPassword);
 
       // Используем транзакцию для атомарного обновления пароля и удаления токенов
-      return await this.prisma.$transaction(async (tx) => {
+      return await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // Отзываем все токены пользователя
         await tx.refreshToken.deleteMany({ where: { userId: id } });
 

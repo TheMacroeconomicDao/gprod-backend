@@ -166,7 +166,10 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "verbose": true,
+    "forceExit": true,
+    "detectOpenHandles": true
   },
   "eslintConfig": {
     "rules": {
