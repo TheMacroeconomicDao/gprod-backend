@@ -1,7 +1,7 @@
 import { LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 // Импортируем модуль с нашей декларацией типов
-import DailyRotateFile = require('winston-daily-rotate-file');
+import DailyRotateFile from 'winston-daily-rotate-file';
 import { EnvHelper } from '../helpers/env.helper';
 import { join } from 'path';
 import * as fs from 'fs';

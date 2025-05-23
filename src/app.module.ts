@@ -2,7 +2,6 @@ import {
   Module,
   MiddlewareConsumer,
   RequestMethod,
-  APP_INTERCEPTOR,
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
@@ -11,11 +10,12 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { HealthModule } from './modules/health/health.module';
-import { PrismaModule } from './common/database/prisma.module';
-import { LoggerMiddleware } from './common/middleware/logger.middleware';
+import { PrismaModule } from './common/prisma.module';
+import { RequestLoggerMiddleware } from './common/middleware/request-logger.middleware';
 import { RateLimiterMiddleware } from './common/middleware/rate-limiter.middleware';
 import { RateLimitInterceptor } from './common/interceptors/rate-limit.interceptor';
 import { LoggerModule } from './common/logger/logger.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -41,7 +41,7 @@ import { LoggerModule } from './common/logger/logger.module';
 export class AppModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(LoggerMiddleware, RateLimiterMiddleware)
+      .apply(RequestLoggerMiddleware, RateLimiterMiddleware)
       .forRoutes({ path: '*', method: RequestMethod.ALL });
   }
 }

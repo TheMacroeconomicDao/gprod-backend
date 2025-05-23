@@ -10,7 +10,8 @@ import {
   RateLimitOptions,
 } from '../decorators/rate-limit.decorator';
 import { ConfigService } from '@nestjs/config';
-import { Logger } from '../logger/logger.service';
+import { WinstonLogger } from '../logger/winston.logger';
+import { Request as ExpressRequest } from 'express';
 
 interface RateLimitRecord {
   count: number;
@@ -19,12 +20,16 @@ interface RateLimitRecord {
   violations: number;
 }
 
+interface RateLimitRequest extends ExpressRequest {
+  rateLimitOptions?: RateLimitOptions;
+}
+
 @Injectable()
 export class RateLimiterMiddleware implements NestMiddleware {
   private readonly ipLimits: Map<string, Record<string, RateLimitRecord>> =
     new Map();
   private readonly cleanupInterval: NodeJS.Timeout;
-  private readonly logger: Logger = new Logger('RateLimiter');
+  private readonly logger: WinstonLogger = new WinstonLogger('RateLimiter');
 
   constructor(private readonly configService: ConfigService) {
     // Запускаем регулярную очистку устаревших записей
@@ -32,36 +37,28 @@ export class RateLimiterMiddleware implements NestMiddleware {
   }
 
   use(req: Request, res: Response, next: NextFunction) {
+    const typedReq = req as RateLimitRequest;
     const ip = req.ip || req.connection.remoteAddress;
-
     if (!ip) {
       this.logger.warn('Cannot determine client IP address');
       return next();
     }
-
-    // Получаем тип запроса из метаданных (будет установлено в RateLimitInterceptor)
-    let rateLimitOptions: RateLimitOptions = req['rateLimitOptions'];
-
-    // Если метаданных нет, используем значения по умолчанию
-    if (!rateLimitOptions) {
-      rateLimitOptions = {
-        limit: this.configService.get<number>('RATE_LIMIT_DEFAULT', 60),
-        ttlSeconds: this.configService.get<number>('RATE_LIMIT_TTL', 60),
-        type: RateLimitType.DEFAULT,
-        blockMultiplier: 2,
-        weight: 1,
-      };
-    }
-
-    // Получаем или создаем запись для IP
+    let rateLimitOptions: RateLimitOptions = typedReq.rateLimitOptions ?? {
+      limit: this.configService.get<number>('RATE_LIMIT_DEFAULT', 60),
+      ttlSeconds: this.configService.get<number>('RATE_LIMIT_TTL', 60),
+      type: RateLimitType.DEFAULT,
+      blockMultiplier: 2,
+      weight: 1,
+    };
+    const rateType = rateLimitOptions.type ?? RateLimitType.DEFAULT;
     if (!this.ipLimits.has(ip)) {
       this.ipLimits.set(ip, {});
     }
-
     const ipRecords = this.ipLimits.get(ip);
-    const rateType = rateLimitOptions.type;
-
-    // Если нет записи для данного типа запроса, создаем
+    if (!ipRecords) {
+      this.logger.warn('ipRecords is undefined');
+      return next();
+    }
     if (!ipRecords[rateType]) {
       ipRecords[rateType] = {
         count: 0,
@@ -70,102 +67,50 @@ export class RateLimiterMiddleware implements NestMiddleware {
         violations: 0,
       };
     }
-
     const record = ipRecords[rateType];
     const now = new Date();
-
-    // Проверяем, не заблокирован ли IP
     if (record.blockedUntil && now < record.blockedUntil) {
-      const remainingTime = Math.ceil(
-        (record.blockedUntil.getTime() - now.getTime()) / 1000,
-      );
-
-      // Логируем попытку запроса во время блокировки
-      this.logger.warn(
-        `Rate limit violation: ${ip} is blocked for ${remainingTime}s more`,
-      );
-
-      // Увеличиваем время блокировки при попытке обхода
+      const remainingTime = Math.ceil((record.blockedUntil.getTime() - now.getTime()) / 1000);
+      this.logger.warn(`Rate limit violation: ${ip} is blocked for ${remainingTime}s more`);
       record.violations += 1;
       if (record.violations > 3) {
-        // Прогрессивно увеличиваем время блокировки
-        const additionalBlock = record.violations * 10; // +10 секунд за каждое нарушение
-        record.blockedUntil = new Date(
-          record.blockedUntil.getTime() + additionalBlock * 1000,
-        );
-
-        this.logger.warn(
-          `Increased block time for ${ip} by ${additionalBlock}s due to repeated violations`,
-        );
+        const additionalBlock = record.violations * 10;
+        record.blockedUntil = new Date(record.blockedUntil.getTime() + additionalBlock * 1000);
+        this.logger.warn(`Increased block time for ${ip} by ${additionalBlock}s due to repeated violations`);
       }
-
-      // Возвращаем 429 Too Many Requests с указанием оставшегося времени блокировки
       res.setHeader('Retry-After', remainingTime.toString());
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message: `Too many requests. Try again in ${remainingTime} seconds.`,
-          error: 'Too Many Requests',
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new HttpException({
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        message: `Too many requests. Try again in ${remainingTime} seconds.`,
+        error: 'Too Many Requests',
+      }, HttpStatus.TOO_MANY_REQUESTS);
     }
-
-    // Проверяем, не истек ли период сброса лимита
-    const timeSinceLastRequest =
-      (now.getTime() - record.lastRequest.getTime()) / 1000;
+    const timeSinceLastRequest = (now.getTime() - record.lastRequest.getTime()) / 1000;
     if (timeSinceLastRequest > rateLimitOptions.ttlSeconds) {
-      // Сбрасываем счетчик, если период истек
       record.count = 0;
-      record.violations = Math.max(0, record.violations - 1); // Уменьшаем счетчик нарушений
+      record.violations = Math.max(0, record.violations - 1);
     }
-
-    // Увеличиваем счетчик запросов
-    record.count += rateLimitOptions.weight;
+    record.count += rateLimitOptions.weight ?? 1;
     record.lastRequest = now;
-
-    // Проверяем, не превышен ли лимит
     if (record.count > rateLimitOptions.limit) {
       record.violations += 1;
-
-      // Рассчитываем время блокировки с учетом множителя и количества нарушений
+      const blockMultiplier = rateLimitOptions.blockMultiplier ?? 2;
       const blockTime = Math.min(
-        600, // Максимальное время блокировки - 10 минут
-        rateLimitOptions.ttlSeconds *
-          rateLimitOptions.blockMultiplier *
-          Math.pow(1.5, Math.min(5, record.violations - 1)), // Экспоненциальный рост до 5 нарушений
+        600,
+        rateLimitOptions.ttlSeconds * blockMultiplier * Math.pow(1.5, Math.min(5, record.violations - 1)),
       );
-
-      // Устанавливаем время до которого IP заблокирован
       record.blockedUntil = new Date(now.getTime() + blockTime * 1000);
-
-      this.logger.warn(
-        `Rate limit exceeded: ${ip} blocked for ${blockTime}s (violations: ${record.violations})`,
-      );
-
-      // Возвращаем 429 Too Many Requests с указанием оставшегося времени блокировки
+      this.logger.warn(`Rate limit exceeded: ${ip} blocked for ${blockTime}s (violations: ${record.violations})`);
       res.setHeader('Retry-After', Math.ceil(blockTime).toString());
-      throw new HttpException(
-        {
-          statusCode: HttpStatus.TOO_MANY_REQUESTS,
-          message: `Too many requests. Try again in ${Math.ceil(blockTime)} seconds.`,
-          error: 'Too Many Requests',
-        },
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
+      throw new HttpException({
+        statusCode: HttpStatus.TOO_MANY_REQUESTS,
+        message: `Too many requests. Try again in ${Math.ceil(blockTime)} seconds.`,
+        error: 'Too Many Requests',
+      }, HttpStatus.TOO_MANY_REQUESTS);
     }
-
-    // Устанавливаем заголовки с информацией о лимитах
     res.setHeader('X-RateLimit-Limit', rateLimitOptions.limit.toString());
-    res.setHeader(
-      'X-RateLimit-Remaining',
-      (rateLimitOptions.limit - record.count).toString(),
-    );
-    res.setHeader(
-      'X-RateLimit-Reset',
-      Math.ceil(rateLimitOptions.ttlSeconds - timeSinceLastRequest).toString(),
-    );
-
+    res.setHeader('X-RateLimit-Remaining', (rateLimitOptions.limit - record.count).toString());
+    res.setHeader('X-RateLimit-Reset', Math.ceil(rateLimitOptions.ttlSeconds - timeSinceLastRequest).toString());
     next();
   }
 
