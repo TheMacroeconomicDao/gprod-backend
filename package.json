@@ -5,6 +5,7 @@
   "author": "Gyber <gyber@example.com>",
   "private": true,
   "license": "AGPL-3.0",
+  "type": "module",
   "scripts": {
     "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",

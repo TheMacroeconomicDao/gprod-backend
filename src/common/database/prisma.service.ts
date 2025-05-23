@@ -4,7 +4,7 @@ import {
   OnModuleDestroy,
   Logger,
 } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 /**
  * Обертка над Prisma Client для управления подключением к БД
@@ -37,7 +37,7 @@ export class PrismaService
     this.logger.log('Database connection established');
 
     // Опционально: добавление middleware для логирования запросов
-    this.$use(async (params, next) => {
+    this.$use(async (params: Prisma.MiddlewareParams, next: (params: Prisma.MiddlewareParams) => Promise<any>) => {
       const before = Date.now();
       const result = await next(params);
       const after = Date.now();
