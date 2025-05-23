@@ -2,16 +2,13 @@ version: '3.8'
 
 services:
   app:
-    command: sh -c "pnpm start:dev"
     volumes:
-      - gprod-app-data-dev:/app/node_modules
+      - gprod_dev_node_modules:/app/node_modules
 
   db:
     volumes:
-      - gprod-db-data-dev:/var/lib/postgresql/data
+      - gprod_dev_db_data:/var/lib/postgresql/data
 
 volumes:
-  gprod-app-data-dev:
-    external: true
-  gprod-db-data-dev:
-    external: true
+  gprod_dev_node_modules:
+  gprod_dev_db_data:

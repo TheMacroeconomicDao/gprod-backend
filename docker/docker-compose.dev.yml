@@ -12,7 +12,7 @@ services:
     ports:
       - '5432:5432'
     volumes:
-      - gprod-db-data-dev:/var/lib/postgresql/data
+      - gprod_dev_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -23,6 +23,7 @@ services:
     container_name: gprod-app-dev
     image: node:20-alpine
     restart: always
+    working_dir: /app
     depends_on:
       db:
         condition: service_healthy
@@ -33,11 +34,9 @@ services:
       - '3008:3000'
     volumes:
       - ../:/app
-      - gprod-app-data-dev:/app/node_modules
-    command: sh -c "pnpm prisma generate && pnpm prisma migrate dev && pnpm start:dev"
+      - gprod_dev_node_modules:/app/node_modules
+    command: sh -c "npm install -g pnpm && pnpm install && pnpm prisma generate && pnpm prisma migrate dev && pnpm start:dev"
 
 volumes:
-  gprod-db-data-dev:
-    external: true
-  gprod-app-data-dev:
-    external: true
+  gprod_dev_db_data:
+  gprod_dev_node_modules:

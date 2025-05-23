@@ -3,7 +3,7 @@
 # ===================================================
 # ud83dude80 GPROD Automation Script
 # ===================================================
-# u0413u043bu0430u0432u043du044bu0439 u0441u043au0440u0438u043fu0442 u0434u043bu044f u0443u043fu0440u0430u0432u043bu0435u043du0438u044f u0430u0432u0442u043eu043cu0430u0442u0438u0437u0430u0446u0438u0435u0439 u043fu0440u043eu0435u043au0442u0430
+# u0413u043bu0430u0432u043du044bu0439 u0441u043au0440u043fu0442 u0434u043bu044f u0443u043fu0440u0430u0432u043bu0435u043du0438u044f u0430u0432u0442u043eu043cu0430u0442u0438u0437u0430u0446u0438u0435u0439 u043fu0440u043eu0435u043au0442u0430
 #
 # u0418u0441u043fu043eu043bu044cu0437u043eu0432u0430u043du0438u0435:
 #   ./automation/run.sh <u043au043eu043cu0430u043du0434u0430> [u043au043eu043du0442u0443u0440]
@@ -55,14 +55,14 @@ show_progress() {
   printf "\r[%${width}s] 100%%\n" | tr ' ' '#'
 }
 
-# u0424u0443u043du043au0446u0438u044f u0434u043bu044f u0441u043eu0445u0440u0430u043du0435u043du0438u044f u0432u044bu0431u043eu0440u0430 u0432 u0438u0441u0442u043eu0440u0438u044e
+# Функция для сохранения выбора в историю
 save_to_history() {
   local env=$1
   local mode=$2
   local rebuild=$3
   
   echo "$env:$mode:$rebuild" > "$HISTORY_FILE"
-  common_print_info "u0412u044bu0431u043eu0440 u0441u043eu0445u0440u0430u043du0435u043d u0432 u0438u0441u0442u043eu0440u0438u044e"
+  common_print_info "Выбор сохранен в историю"
 }
 
 # u0424u0443u043du043au0446u0438u044f u0434u043bu044f u0437u0430u0433u0440u0443u0437u043au0438 u0438u0441u0442u043eu0440u0438u0438
@@ -242,7 +242,7 @@ show_help() {
   echo "  run         - запуск окружения (настройка + запуск Docker)"
   echo "  stop        - остановка окружения"
   echo "  logs        - просмотр логов"
-  echo "  test        - запуск тестов"
+  echo "  test        - запуск тестов в Docker"
   echo "  interactive - интерактивный режим запуска"
   echo ""
   echo "Контуры:"
@@ -255,11 +255,17 @@ show_help() {
   echo "  --build    - пересборка образов при запуске"
   echo "  --volumes  - удаление томов при остановке"
   echo ""
+  echo "Опции для тестов:"
+  echo "  unit       - запуск только unit-тестов"
+  echo "  e2e        - запуск только e2e-тестов"
+  echo ""
   echo "Примеры:"
-  echo "  ./automation/run.sh run dev"
-  echo "  ./automation/run.sh run prod --build"
-  echo "  ./automation/run.sh stop stage --volumes"
-  echo "  ./automation/run.sh interactive"
+  echo "  ./automation/run-new.sh run dev"
+  echo "  ./automation/run-new.sh run prod --build"
+  echo "  ./automation/run-new.sh stop stage --volumes"
+  echo "  ./automation/run-new.sh test dev"
+  echo "  ./automation/run-new.sh test dev unit"
+  echo "  ./automation/run-new.sh interactive"
 }
 
 # Основная логика скрипта
@@ -337,8 +343,61 @@ case $COMMAND in
   test)
     common_print_header "🧪 Запуск тестов для контура $(env_get_full_name $ENV)"
     env_setup "$ENV" "$PROJECT_ROOT" "docker"
-    common_print_step "Запуск тестов..."
-    cd "$PROJECT_ROOT" && docker compose -f "$(env_get_compose_file $ENV $PROJECT_ROOT)" exec app npm test
+    
+    # Определяем тип тестов из параметров
+    test_type="all"
+    
+    for param in $ADDITIONAL_PARAMS; do
+      case $param in
+        "unit"|"e2e")
+          test_type="$param"
+          ;;
+      esac
+    done
+    
+    # Проверяем статус контейнера app
+    common_print_step "Проверка статуса контейнера app..."
+    compose_file=$(env_get_compose_file "$ENV" "$PROJECT_ROOT")
+    app_status=$(docker compose -f "$compose_file" ps app --format "table" 2>/dev/null | grep "running" || echo "")
+    
+    if [ -z "$app_status" ]; then
+      common_print_warning "Контейнер app не запущен. Запускаем автоматически..."
+      docker_compose_up "$ENV" "$PROJECT_ROOT" false
+      
+      # Ждём готовности контейнера
+      retries=30
+      while [ $retries -gt 0 ]; do
+        app_status=$(docker compose -f "$compose_file" ps app --format "table" 2>/dev/null | grep "running" || echo "")
+        if [ -n "$app_status" ]; then
+          break
+        fi
+        common_print_step "Ожидание запуска контейнера app... ($retries)"
+        sleep 2
+        retries=$((retries - 1))
+      done
+      
+      if [ $retries -eq 0 ]; then
+        common_print_error "Не удалось запустить контейнер app"
+        common_print_step "Логи контейнера app:"
+        docker compose -f "$compose_file" logs app --tail=50
+        exit 1
+      fi
+    fi
+    
+    # Запуск тестов в Docker контейнере
+    common_print_step "Запуск тестов в Docker контейнере..."
+    if [ "$test_type" = "unit" ]; then
+      cd "$PROJECT_ROOT" && docker compose -f "$compose_file" exec app pnpm run test
+    elif [ "$test_type" = "e2e" ]; then
+      cd "$PROJECT_ROOT" && docker compose -f "$compose_file" exec app pnpm run test:e2e
+    else
+      # Запускаем все тесты
+      cd "$PROJECT_ROOT" && docker compose -f "$compose_file" exec app pnpm run test
+      if [ $? -eq 0 ]; then
+        cd "$PROJECT_ROOT" && docker compose -f "$compose_file" exec app pnpm run test:e2e
+      fi
+    fi
+    
     if [ $? -eq 0 ]; then
       common_print_success "Тесты успешно пройдены"
     else
