@@ -30,12 +30,13 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/gprod_dev}
       NODE_ENV: ${NODE_ENV:-development}
+      PNPM_DISABLE_SCRIPTS: false
     ports:
       - '3008:3000'
     volumes:
       - ../:/app
       - gprod_dev_node_modules:/app/node_modules
-    command: sh -c "npm install -g pnpm && pnpm install && pnpm prisma generate && pnpm prisma migrate dev && pnpm start:dev"
+    command: sh -c "npm install -g pnpm && pnpm install --ignore-scripts=false && pnpm prisma generate && pnpm prisma migrate dev && pnpm start:dev"
 
 volumes:
   gprod_dev_db_data:
